@@ -4,8 +4,12 @@ Created on Tue May 16 13:23:52 2017
 
 @author: jgoldstein
 
-PTA response functions
-and construction of M matrix from null-stream paper
+- PTA response functions
+- construction of M matrix from null-stream paper
+ and inverse covariance matrix of transformed quantity
+- apply null-stream transform to single-frequency data
+
+All checked/imporved 30/04/19
 """
 
 import numpy as np
@@ -63,10 +67,12 @@ def source_polarisation_tensors(theta, phi):
     return eplus, ecross
     
 
-def responses(theta_s, phi_s, pulsars):
+def response_matrix(theta_s, phi_s, pulsars):
     """
-    Get response functions for a pulsar and a GW source location
+    Get matrix of response functions given the source location and all pulsars.
     
+    First column is Fplus per pulsar, second column is Fcross per pulsar. 
+    Number of rows equal to the number of pulsars. 
     Plus and cross response functions accroding to the definitions
     in the Anholm et al. paper http://arxiv.org/abs/0809.0701
     
@@ -101,35 +107,9 @@ def responses(theta_s, phi_s, pulsars):
     # is p_i eplus_ij p_j, the '...' is the extra dimension for the number of pulsars
     Fplus = prefactor * np.einsum('i...,ij,j...', p, eplus, p)
     Fcross = prefactor * np.einsum('i...,ij,j...', p, ecross, p)
-    return Fplus, Fcross
+    
+    return np.vstack((Fplus, Fcross)).T
 
-### CHECKED/IMPROVED UP TO HERE ####
-    
-def response_matrix(theta_s,phi_s, pulsars):
-    """
-    Column matrix of response functions
-    
-    N x 2 matrix with Fplus, Fcross response functions in each row, 
-    for N pulsars. Uses responses() to calculate Fplus, Fcross
-    
-    Parameters
-    ----------
-    theta_s: float
-        polar angle of the source position in radians, between 0 and pi
-    phi_s: float
-        azimuthal angle of the source position in radians, between 0 and 2 pi
-    pulsars: list
-        List of coordinates of the pulsars in the PTA, where each coordinate
-        is an array with theta, phi (polar and azimuthal coordinate)
-    
-    Returns
-    -------
-    NumPy Array
-        N x 2 matrix of response functions
-        N is the number of pulsars in the PTA (the length of pulsars)
-    """
-    R = [ list(responses(theta_s, phi_s, p[0], p[1])) for p in pulsars]
-    return np.array(R)
     
 def construct_M(theta_s, phi_s, pulsars):
     """
@@ -160,57 +140,76 @@ def construct_M(theta_s, phi_s, pulsars):
         N x N super matrix that projects N redshifts onto 2 strains and
         N-2 null streams
     """
-    N = len(pulsars)    
-    
+    n = len(pulsars)
+
     R = response_matrix(theta_s, phi_s, pulsars)
-    RinvMP = la.pinv(R)
-    # construct projection matrix for the null space
-    null_matrix = np.identity(N) - np.einsum('ij,jk',R,RinvMP)
+    # get Moore-Penrose inverse (= pseudo inverse) of R
+    Rinv = la.pinv(R)
     
-    # use QR-decomposition to find orthonormal basis of null space
-    # first N-2 columns form basis
-    q,r = la.qr(null_matrix)
+    # Get null space projection matrix, then use qr decomposition to 
+    # get n-2 basis vectors of null space (first n-2 columns of q)
+    null_projection = np.eye(n) - np.einsum('ij,jk', R, Rinv)
+    q,r = la.qr(null_projection)
+    null_basis = q[:, np.arange(n) < (n-2)]
     
-    # construct "super" F matrix
-    M = np.zeros((N,N),dtype='complex')
-    # the second to the last row project onto null space using orthonormal basis
-    # of the null space as constructed above
-    for i in range(N-2):    
-        M[2+i,:] = q[:,i]
-    # first two rows transform redshifts back to strain
-    M[0,:] = RinvMP[0,:]
-    M[1,:] = RinvMP[1,:]
-    
-    return np.real(M)
-    
-def Fisher_matrix(A, S):
+    # construct "super" M matrix. First two rows: MP inverse of R
+    # last n-2 rows: transposed null basis
+    M = np.vstack((Rinv, null_basis.T))
+
+    return M
+
+def inv_transformed_cov(T, C):
     """
-    Calculate Fisher matrix from transformation matrix A and covariance matrix S
+    Calculate inverse covariance matrix for a transformed quantity.
     
-    For a quantity y = A x, and covariance matrix S for x, the covariance matrix
-    for y is given by Sy = A S A^T. (A^T is the transpose of A). Then the Fisher
-    matrix is given by (Sy)^-1 = (A^-1)^T (S^-1) (A^-1). 
+    For a transformed quantity y = T x, where x has covariance matrix C, y has
+    covariance matrix T C Tt (Tt being the transpose of T). Then the inverse
+    covariance matrix of y is given by (T C Tt)^(-1) = T^(-t) C^(-1) T^(-1).
     
     Parameters
     ----------
-    A: NumPy Array
-        NxN transformation matrix (y = A x)
-    S: NumPy Array
-        NxN covariance matrix (for x)
+    T: numpy array
+        Transformation matrix (null-stream super matrix) NxN
+    C: numpy array
+        Covariance matrix of the un-transformed quantity NxN
         
     Returns
     -------
-    Numpy Array
-        NxN Fisher matrix (for y)
-        
-    Example
-    -------
-    Given covariance matrix S for redshifts z, and a transformation to a 
-    strain + null stream vector h = M z, the Fisher matrix for h is given by
-    (M^-1)^T (S^1) (M^-1)
-        
+    numpy array
+        Inverse covariance matrix of the transformed quantity NxN
     """
-    Sinv = la.inv(S)
-    Ainv = la.inv(A)
-    # transpose is done by swapping indices in the einsum on the first matrix
-    return np.einsum('ji,jk,kl', Ainv, Sinv, Ainv)
+    Cinv = la.inv(C)
+    Tinv = la.inv(T)
+    # transpose of the first term in the product is done by swapping the order
+    # of its indices in the einstein summation convention
+    return np.einsum('ji,jk,kl', Tinv, Cinv, Tinv)
+
+def null_streams(data, source, pulsars):
+    """
+    Construct signal streams + null streams from single frequency data.
+    
+    Data and pulsars are numpy arrays of the same lenght (first dimension is 
+    the same) because the data at a single frequency is just a single number
+    for each pulsar.
+    
+    Parameters
+    ----------
+    data: numpy array
+        single frequency data point for each pulsar
+    source: numpy array
+        source location (theta, phi)
+    pulsars: numpy array
+        N x 2 array of theta, phi coordinates of pulsars
+        theta: polar angle of the pulsar position in radians, between 0 and pi
+        phi: azimuthal angle of the pulsar position in radians, between 0 and 2 pi
+    
+    Returns
+    -------
+    numpy array
+        first two entries are reconstructed signal, then N-2 null streams 
+        (where N is the number of pulsars)
+    """
+    M = construct_M(*source, pulsars)
+    null_streams = np.dot(M, data)
+    return null_streams
+    
