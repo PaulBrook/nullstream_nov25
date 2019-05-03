@@ -158,7 +158,7 @@ def construct_M(theta_s, phi_s, pulsars):
 
     return M
 
-def inv_transformed_cov(T, C):
+def inv_transformed_cov(T, Cinv):
     """
     Calculate inverse covariance matrix for a transformed quantity.
     
@@ -170,32 +170,36 @@ def inv_transformed_cov(T, C):
     ----------
     T: numpy array
         Transformation matrix (null-stream super matrix) NxN
-    C: numpy array
-        Covariance matrix of the un-transformed quantity NxN
+    Cinv: numpy array
+        Inverse covariance matrix of the un-transformed quantity NxN
         
     Returns
     -------
     numpy array
         Inverse covariance matrix of the transformed quantity NxN
     """
-    Cinv = la.inv(C)
     Tinv = la.inv(T)
     # transpose of the first term in the product is done by swapping the order
     # of its indices in the einstein summation convention
     return np.einsum('ji,jk,kl', Tinv, Cinv, Tinv)
 
-def null_streams(data, source, pulsars):
+def null_streams(data, invC, source, pulsars):
     """
     Construct signal streams + null streams from single frequency data.
     
     Data and pulsars are numpy arrays of the same lenght (first dimension is 
     the same) because the data at a single frequency is just a single number
     for each pulsar.
+    Incidentally this function does work for time domain data as well (in which
+    case the data would have two dimensions, the second one for the number of
+    observations in time).
     
     Parameters
     ----------
     data: numpy array
         single frequency data point for each pulsar
+    invC: numpy array
+        inverse covariance matrix for the data
     source: numpy array
         source location (theta, phi)
     pulsars: numpy array
@@ -208,8 +212,11 @@ def null_streams(data, source, pulsars):
     numpy array
         first two entries are reconstructed signal, then N-2 null streams 
         (where N is the number of pulsars)
+    numpy array
+        transformed inverse covariance matrix to go with null stream data
     """
     M = construct_M(*source, pulsars)
     null_streams = np.dot(M, data)
-    return null_streams
+    inv_cov = inv_transformed_cov(M, invC)
+    return null_streams, inv_cov
     

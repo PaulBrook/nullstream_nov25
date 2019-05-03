@@ -142,7 +142,7 @@ def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
         hcross = Tobs * 0.5 * np.exp(1.0j * (1.5*np.pi + phase)) * Across
     
     # apply a rotation for the polarisation angle
-    hplus, hcross = rotate_wave(hplus,hcross,pol)
+    hplus, hcross = rotate_wave(hplus, hcross, pol)
     
     return hplus, hcross
 
@@ -159,3 +159,4 @@ def sinusoid_FD_zerophase(amp, pol, cosi, GW_ang_freq, Tobs):
     see sinusoid_FD (apart from phase which is set to zero)
     """
     return sinusoid_FD(0.0, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True)
+
