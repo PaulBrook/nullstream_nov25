@@ -36,35 +36,34 @@ def rotate_wave(Ap, Ac, psi):
     return Ap_out, Ac_out
 
 
-def sinusoid_TD(times, amp, phase, pol, cosi, 
-             ang_freq=2.0e-8 * np.pi, integrate=True):
+def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     """
     Produce the GW polarisations time series according to a sinusoid model
     
     The plus and cross polarisations for a sinusoid model of a binary black hole
     (BBH) are given by:
-    hplus = amp 1/2 (1+cos(i)^2) cos(2 omega t - phase)
-    hcross = amp cos(i) sin(2 omega t - phase)
+    hplus = amp 1/2 (1+cos(i)^2) cos(omega t - phase)
+    hcross = amp cos(i) sin(omega t - phase)
     with amp the overall amplitude (depending on the chirp mass for a BBH), 
-    i the inclination, omega the angular orbital frequency 
+    i the inclination, omega the angular GW frequency (= 2 x orbital)
     and phase the phase offset
     
     Parameters
     ----------
     times: NumPy Array
         times to calculate the GW model at
-    amp: float
-        Amplitude of the GW model
     phase: float
         phase offset of the GW model in radians
+    amp: float
+        Amplitude of the GW model
     pol: float
         polarisation angle in radians
     cosi: float
         cosine of the inclination, between 0 and 1
         using the cosine sice it has a flat prior
-    ang_freq: float
-        default: 1.0e-8 * 2pi
-        angular orbital frequency of the binary
+    GW_ang_freq: float
+        angular frequency of the GW signal in rad/s
+        (this is twice the orbital frequency)
     integrate: bool
         default: True
         if True, returns time integrated gravitational waves to calculate
@@ -80,18 +79,15 @@ def sinusoid_TD(times, amp, phase, pol, cosi,
     Aplus = amp * 0.5 * (1.0 + cosi**2.0) 
     Across = amp * cosi
     
-    # GW frequency = 2 * orbital frequency
-    gw_ang_freq = 2.0 * ang_freq
-    
     if integrate:
-        hplus = (Aplus / gw_ang_freq) * np.sin(gw_ang_freq * times + phase)
-        hcross = -(Across / gw_ang_freq) * np.cos(gw_ang_freq * times + phase)
+        hplus = (Aplus / GW_ang_freq) * np.sin(GW_ang_freq * times + phase)
+        hcross = -(Across / GW_ang_freq) * np.cos(GW_ang_freq * times + phase)
     else:
-        hplus = Aplus * np.cos(gw_ang_freq * times + phase)
-        hcross = Across * np.sin(gw_ang_freq * times + phase)
+        hplus = Aplus * np.cos(GW_ang_freq * times + phase)
+        hcross = Across * np.sin(GW_ang_freq * times + phase)
 
     # apply a rotation for the polarisation angle
-    hplus, hcross = rotate_wave(hplus,hcross,pol)
+    hplus, hcross = rotate_wave(hplus, hcross, pol)
     return hplus, hcross
     
 def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
