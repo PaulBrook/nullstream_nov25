@@ -22,11 +22,15 @@ class PTA_sim:
     def __init__(self):
         self._pulsars = pd.DataFrame(columns=['theta', 'phi', 'rms', 'nTOA'])
         self._n_pulsars = 0
-        self._times = None
-        self._residuals = None
-        self._hplus = None
-        self._hcross = None
-        self._noise = None
+        self._times = 0
+        self._hplus = 0
+        self._hcross = 0
+        self._signal= 0
+        self._noise = 0
+        
+    @property
+    def residuals(self):
+        return self._signal + self._noise
         
     def _check_empty_pulsars(self, overwrite=False):
         if not self._pulsars.empty:
@@ -133,7 +137,7 @@ class PTA_sim:
         
     def plot_pulsar_map(self):
         zero_map = np.zeros(hp.nside2npix(1))
-        hp.mollview(zero_map, title='{} pulsar PTA'.format(len(self.pulsars)))
+        hp.mollview(zero_map, title='{} pulsar PTA'.format(len(self._pulsars)))
         
         marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
         for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
@@ -149,7 +153,11 @@ class PTA_sim:
         self._times = np.array((times,)*self._n_pulsars)
         
         # create zero residuals for now (inject signal/make noise later)
-        self._residuals = np.zeros_like(times)
+        self._hplus = np.zeros_like(times) # single row (same for all pulsars)
+        self._hcross = np.zeros_like(times)
+        
+        self._signal = np.zeros_like(self._times) # row per pulsar
+        self._noise = np.zeros_like(self._times)
         
     
     def randomized_times(self, mean_cadence=1e6, meanT=20*YEAR, t_start=0):
@@ -184,7 +192,25 @@ class PTA_sim:
         responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
         Fplus = np.expand_dims(responses[:, 0], -1)
         Fcross = np.expand_dims(responses[:, 1], -1)
-        self._residuals = Fplus * self._hplus + Fcross * self._hcross
+        # add to signal in case we want multiple injections done
+        self._signal += Fplus * self._hplus + Fcross * self._hcross
+        
+    def white_noise(self):
+        """
+        Inject gaussian noise according to each pulsar's rms level. 
+        This deletes any previously injected noise (but keeps signal the same).
+        """
+        # annoyingly, rd.normal cannot handle both an array for the scale values
+        # and more than a scalar output for each of those values, so we have to
+        # loop through the pulsars
+        nTOAs = self._times.shape[-1]
+        noise = [rd.normal(scale=self._pulsars['rms'][i], size=nTOAs) 
+                 for i in range(sim._n_pulsars)]
+        
+        self._noise = np.array(noise)
+        assert(self._noise.shape == self._times.shape)
+        # don't add to any previously existing noise
+        self._noise = noise
         
         
     def plot_residuals(self):
@@ -192,6 +218,44 @@ class PTA_sim:
         Plot times vs residuals for all pulsars
         """
         fig, ax = plt.subplots(1)
-        ax.plot(self._times.T, self._residuals.T)
+        ax.plot(self._times.T, self.residuals.T, ls='none', marker='.')
         ax.set_xlabel('time (s)')
         ax.set_ylabel('residuals (s)')
+        
+    def clear_residuals(self):
+        """
+        Delete any signal and noise from the residuals.
+        """
+        self._hplus = None
+        self._hcross = None
+        self._signal = np.zeros_like(self._times)
+        self._noise = np.zeros_like(self._times)
+        
+        
+if __name__ == '__main__':
+    print('An example of PTA sim')
+    # make a simulation object (we may want to have initialisation options that
+    # automatically do the next few steps, but for now we do them by hand)
+    sim = PTA_sim()
+    
+    # make some pulsars, in this case 5 random ones with some variation in rms
+    # and plot a skymap (bigger markers are better pulsars)
+    sim.random_pulsars(5, sig_rms=5e-8)
+    sim.plot_pulsar_map()
+    
+    # set some evenly sampled times (default options)
+    sim.evenly_sampled_times()
+    
+    # inject a sinusoid signal
+    # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
+    from GW_models import sinusoid_TD
+    GW_args = [0.1, 1e-14, np.pi/7, 0.3, 1e-8] 
+    source = (0.8 * np.pi, 1.3 * np.pi)
+    sim.inject_signal(sinusoid_TD, source, *GW_args)
+    
+    # inject white noise
+    sim.white_noise()
+    
+    # not plot the residuals
+    sim.plot_residuals()
+    
