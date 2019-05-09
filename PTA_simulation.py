@@ -12,7 +12,11 @@ import pandas as pd
 import healpy as hp
 import matplotlib.pyplot as plt
 
-from jannasutils import radec_location_to_ang
+try:
+    from jannasutils import radec_location_to_ang
+except:
+    # use hacked excerpt from jannasutils
+    from from_jannasutils import radec_location_to_ang
 from nullstream_algebra import response_matrix
 
 # all times are in seconds (or 1/seconds)
