@@ -205,7 +205,7 @@ class PTA_sim:
         # loop through the pulsars
         nTOAs = self._times.shape[-1]
         noise = [rd.normal(scale=self._pulsars['rms'][i], size=nTOAs) 
-                 for i in range(sim._n_pulsars)]
+                 for i in range(self._n_pulsars)]
         
         self._noise = np.array(noise)
         assert(self._noise.shape == self._times.shape)
