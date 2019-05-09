@@ -153,6 +153,7 @@ class PTA_sim:
         self._times = np.array((times,)*self._n_pulsars)
 
         # create zero residuals for now (inject signal/make noise later)
+        # FIXME: necessary?
         self._hplus = np.zeros_like(times) # single row (same for all pulsars)
         self._hcross = np.zeros_like(times)
 
@@ -168,30 +169,63 @@ class PTA_sim:
         """
         # the same length as evenly_sampled_times
         nTOA = np.ceil((meanT - t_start)/mean_cadence).astype(int)
-        self._pulsar['nTOA'] = nTOA
+        self._pulsars['nTOA'] = nTOA
 
         # cadences are drawn from a truncated gaussian distribution
         cadences = np.random.normal(mean_cadence, std_cadence,
                                     (self._n_pulsars, nTOA))
         cadences = np.maximum(cadences, min_cadence)
+        cadences[:, 0] = t_start  # initial time
 
         # calculate times; add default (zeroed) values for other quantities
-        self._times = t_start + np.cumsum(cadences, 1)
+        self._times = np.cumsum(cadences, 1)
 
-        self._hplus = np.zeros(nTOA)  # single row (same for all pulsars)
+        # FIXME: how is this used? Might be better to have one row/pulsar
+        # do we need them at all?
+        self._hplus = np.zeros(nTOA)
         self._hcross = np.zeros(nTOA)
 
         self._signal = np.zeros_like(self._times)  # row per pulsar
         self._noise = np.zeros_like(self._times)
 
-        return
+
+    def multi_nTOA_rand_times(self, mean_cadences=1e6, std_cadences=1e5,
+                              min_cadences=1e5, meanTs=20*YEAR, t_starts=0):
+        """
+        Same as randomized_times, except that all inputs can be arrays
+        representing the different pulsars. Key differences: timespans don't
+        align, mean cadences differ, and (as a result) nTOA differs.
+        NOTE: the time array has nans in it, so downstream routines will need
+        to be able to deal with/remove them as necessary
+        """
+        # get the number of TOAs for each pulsar
+        nTOAs = (np.array(meanTs) - np.array(t_starts))/np.array(mean_cadences)
+        nTOAs = np.ceil(nTOAs).astype(int)
+        self._pulsars['nTOA'] = nTOAs
+
+        # draw cadences from a truncated gaussian distribution
+        # make array rectangular by drawing the max number needed
+        # this is wasteful of memory, but lets us use numpy routines more easily
+        cadences = np.random.normal(mean_cadences, std_cadences,
+                                    (np.max(nTOAs), self._n_pulsars))
+        cadences = np.maximum(cadences, min_cadences)
+        cadences[0, :] = t_starts  # initial time
+
+        # set excess cadences to nan: variable nTOA, but still rectangular arrays
+        for psr in range(self._n_pulsars):
+            cadences[nTOAs[psr]:, psr] = np.nan
+
+        times = np.cumsum(cadences, 0)
+        self._times = times.T
+
 
     def gappy_times(self):
         """
         Set times with random gaps and within different observation windows
         for all pulsars.
         """
-        # TODO
+        # TODO as above, but randomly combine some cadences (remove times)
+        # Poisson dist for # of gaps, exponential dist for gap length?
         pass
 
     def times_from_tim_file(self, filepath):
