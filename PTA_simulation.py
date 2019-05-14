@@ -176,87 +176,63 @@ class PTA_sim:
 
         self._initiate_zero_residuals()
 
-
     def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
-                         min_cadence=1e5, t_end=20*YEAR, t_start=0):
+                          min_cadence=1e5, t_start=0.0, t_end=20*YEAR):
         """
-        Set somewhat randomized observation times with average cadence, within
-        the same observation time for all pulsars.
-        """
-        # with randomized times, we don't know in advance how many TOAs will 
-        # fit between start and end. But we can use a reasonably small 
-        # cadence of mean - 2*sigma to get an upper bound on the number
-        nTOA_max = np.ceil((t_end - t_start) / (mean_cadence - 2*std_cadence)).astype(int)
+        Randomized times from gaussian distributed cadences.
         
-        # now draw random cadences (= gaps between TOAs) from a truncated gaussian
-        cadences = rd.normal(mean_cadence, std_cadence, 
-                             size=(self._n_pulsars, nTOA_max))
-        cadences = np.maximum(cadences, min_cadence)
-        
-        # set start time, then calculate consecutive times
-        cadences[:, 0] = t_start
-        times = np.cumsum(cadences, axis=1)
-        
-        # get rid of times larger than t_end
-        # first, crop length to longest times
-        end_index = [np.searchsorted(t, t_end) for t in times]
-        max_length = np.max(end_index)
-        times = times[:, :max_length]
-        # second, set times > t_end to nans
-        times[times > t_end] = np.nan
-        self._times = times
-        
-        for p in range(self._n_pulsars):
-            self._pulsasrs['nTOA'][p] = len(self._times[p]) - sum(np.isnan(self._times[p]))
-        self._initiate_zero_residuals()
-
-
-    def randomized_times2(self, mean_cadences, std_cadences,
-                          t_starts, t_ends, min_cadence=1e5):
-        """
-        Randomized times with a different time span and mean cadence per pulsar.
-        
-        Works similar to randomized_times in making randomized cadences between
-        TOAs, but with different time spans and mean cadence, and as such 
-        different numbers of TOAs per pulsar. 
-        Times are padded with NaNs to make the full array rectangular. Note: other
-        routines will have to deal with these NaNs.
+        Can either have the same times for all pulsars, or be different when
+        arrays are passed for the mean cadence etc per pulsar. The second option
+        will give different numbers of TOAs per pulsar.
+        To keep times a rectangular array, times are padded with nans.
         
         Parameters
         ----------
-        mean_cadence: numpy array
-            mean cadence per pulsar
-        std_cadences: numpy array
-            standard deviation for gaussian used to make randomized cadences per pulsar
-        t_stars: numpy array
-            start time per pulsar
-        t_ends: numpy array
-            end time per pulsar
-        min_cadence: float or numpy array
-            minimum cadence, if float, it's used for all pulsars
-            can also specify one number per pulsar in an array
+        mean_cadence: float or numpy array
+            mean cadence for all pulsars (float) or per pulsar (array)
+            default = 1e6 (seconds)
+        std_cadence: float numpy array
+            standard deviation for gaussian used to make randomized cadences
             default = 1e5 (seconds)
+        min_cadence: float or numpy array
+            minimum cadence, i.e. minimum gap between two TOAs
+            default = 1e5 (seconds)
+        t_start: float or numpy array
+            start time
+            default = 0 
+        t_end: float or numpy array
+            (approximate) end time
+            default = 20 years
+
         """
         # get the number of TOAs for each pulsar
-        nTOAs = (np.array(t_ends) - np.array(t_starts))/np.array(mean_cadences)
-        nTOAs = np.ceil(nTOAs).astype(int)
+        # note: we don't take t_end to be exact, but just use it to get a number
+        # of TOAs that will be randomized (so the exact start time depends on them).
+        nTOAs = np.ceil((t_end - t_start)/ mean_cadence).astype(int)
         self._pulsars['nTOA'] = nTOAs
+        max_nTOAs = np.max(nTOAs)
 
         # draw cadences from a truncated gaussian distribution
         # make array rectangular by drawing the max number needed
         # this is wasteful of memory, but lets us use numpy routines more easily
-        cadences = np.random.normal(mean_cadences, std_cadences,
-                                    size=(np.max(nTOAs), self._n_pulsars))
+        cadences = rd.normal(mean_cadence, std_cadence,
+                                    size=(max_nTOAs, self._n_pulsars))
         cadences = np.maximum(cadences, min_cadence)
-        cadences[0, :] = t_starts  # initial time
-
-        # set excess cadences to nan: variable nTOA, but still rectangular arrays
-        for psr in range(self._n_pulsars):
-            cadences[nTOAs[psr]:, psr] = np.nan
-
-        times = np.cumsum(cadences, 0)
-        self._times = times.T
+        # had to swap shape above in rd.normal, but we want npulsars x nTOAs
+        cadences = cadences.T
         
+        # calculate times: start with start time, then cumulatively add cadences
+        cadences[:, 0] = t_start
+        times = np.cumsum(cadences, axis=1)
+
+        # set excess times to nan: variable nTOA, but still rectangular arrays
+        if isIterable(nTOAs):    
+            for psr in range(self._n_pulsars):
+                times[psr, nTOAs[psr]:] = np.nan
+        else:
+            times[:, nTOAs:] = np.nan
+
+        self._times = times
         self._initiate_zero_residuals()
 
 
