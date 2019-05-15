@@ -17,7 +17,7 @@ try:
 except:
     # use hacked excerpt from jannasutils
     from from_jannasutils import radec_location_to_ang, isIterable
-    
+
 from nullstream_algebra import response_matrix
 
 # all times are in seconds (or 1/seconds)
@@ -39,7 +39,7 @@ class PTA_sim:
     @property
     def residuals(self):
         return self._signal + self._noise
-    
+
     @property
     def residualsFD(self):
         return self._signalFD + self._noiseFD
@@ -154,17 +154,17 @@ class PTA_sim:
         marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
         for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
             hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
-            
+
     # helper function to be used after setting times
     def _initiate_zero_residuals(self):
         # add default (zeroed) values for other quantities
         # these are all per pulsar to be compatible with potentially different
         # numbers of TOAs per pulsar
-        self._hplus = np.zeros_like(self._times) 
-        self._hcross = np.zeros_like(self._times) 
+        self._hplus = np.zeros_like(self._times)
+        self._hcross = np.zeros_like(self._times)
         self._signal = np.zeros_like(self._times)
         self._noise = np.zeros_like(self._times)
-        
+
         # values where times has a nan (padding to get rectangular arrays) are
         # also set to nan
         padding = np.isnan(self._times)
@@ -172,7 +172,7 @@ class PTA_sim:
         self._hcross[padding] = np.nan
         self._signal[padding] = np.nan
         self._noise[padding] = np.nan
-        
+
     def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
         """
         Set the same evenly sampled times for all pulsars.
@@ -187,12 +187,12 @@ class PTA_sim:
                           min_cadence=1e5, t_start=0.0, t_end=20*YEAR):
         """
         Randomized times from gaussian distributed cadences.
-        
+
         Can either have the same times for all pulsars, or be different when
         arrays are passed for the mean cadence etc per pulsar. The second option
         will give different numbers of TOAs per pulsar.
         To keep times a rectangular array, times are padded with nans.
-        
+
         Parameters
         ----------
         mean_cadence: float or numpy array
@@ -206,7 +206,7 @@ class PTA_sim:
             default = 1e5 (seconds)
         t_start: float or numpy array
             start time
-            default = 0 
+            default = 0
         t_end: float or numpy array
             (approximate) end time
             default = 20 years
@@ -227,13 +227,13 @@ class PTA_sim:
         cadences = np.maximum(cadences, min_cadence)
         # had to swap shape above in rd.normal, but we want npulsars x nTOAs
         cadences = cadences.T
-        
+
         # calculate times: start with start time, then cumulatively add cadences
         cadences[:, 0] = t_start
         times = np.cumsum(cadences, axis=1)
 
         # set excess times to nan: variable nTOA, but still rectangular arrays
-        if isIterable(nTOAs):    
+        if isIterable(nTOAs):
             for psr in range(self._n_pulsars):
                 times[psr, nTOAs[psr]:] = np.nan
         else:
@@ -254,6 +254,7 @@ class PTA_sim:
         # get the number of TOAs for each pulsar
         nTOAs = (np.array(t_ends) - np.array(t_starts))/np.array(mean_cadences)
         nTOAs = np.ceil(nTOAs).astype(int)
+        nTOAs = np.broadcast_to(nTOAs, self._n_pulsars)
         self._pulsars['nTOA'] = nTOAs
 
         # draw cadences from a truncated gaussian distribution
@@ -300,7 +301,7 @@ class PTA_sim:
         """
         # TODO
         pass
-    
+
 
     def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
         """
@@ -348,11 +349,11 @@ class PTA_sim:
         self._hcross = None
         self._signal = np.zeros_like(self._times)
         self._noise = np.zeros_like(self._times)
-    
+
     def fourier(self, freqs=np.linspace(1.0e-9, 1.0e-7, 100)):
         """
         Compute the Fourier domain signal and noise
-        
+
         Parameters
         ----------
         freqs: float or numpy array
@@ -360,14 +361,14 @@ class PTA_sim:
             These frequencies are the same for all pulsars
         """
         self._freqs = freqs
-    
+
         self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
         self._noiseFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
-    
+
         for i in range(self._n_pulsars):
-            
+
             irregular_times = self._times[i][np.isfinite(self._times[i])]
-    
+
             weights = np.array([
                             irregular_times[t_index+1]-irregular_times[t_index]
                             if t_index<len(irregular_times)-1
@@ -381,14 +382,14 @@ class PTA_sim:
                             weights[t_index] * np.exp( -2.*np.pi*(1j)*f*irregular_times[t_index] )
                            for t_index in range(len(irregular_times))]
                           for f in self._freqs])
-                          
+
             irregularly_sampled_signal = self._signal[i][np.isfinite(self._times[i])]
             self._signalFD[i] = np.dot(M, irregularly_sampled_signal)
-            
+
             if np.shape(self._noise) is not ():
                 irregularly_sampled_noise = self._noise[i][np.isfinite(self._times[i])]
                 self._noiseFD[i] = np.dot(M, irregularly_sampled_noise)
-    
+
     def plot_residuals_FD(self):
         """
         Plot times vs residuals for all pulsars
