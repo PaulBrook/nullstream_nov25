@@ -121,6 +121,7 @@ def gappy_times(self, mean_cadences=1e6, std_cadences=1e5, min_cadences=1e5,
     # get the number of TOAs for each pulsar
     nTOAs = (np.array(t_ends) - np.array(t_starts))/np.array(mean_cadences)
     nTOAs = np.ceil(nTOAs).astype(int)
+    nTOAs = np.broadcast_to(nTOAs, self._n_pulsars)
     self._pulsars['nTOA'] = nTOAs
 
     # draw cadences from a truncated gaussian distribution

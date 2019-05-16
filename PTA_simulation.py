@@ -17,7 +17,7 @@ try:
 except:
     # use hacked excerpt from jannasutils
     from from_jannasutils import radec_location_to_ang, isIterable
-    
+
 from nullstream_algebra import response_matrix
 import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
@@ -31,14 +31,21 @@ class PTA_sim:
         self._pulsars = pd.DataFrame(columns=['theta', 'phi', 'rms', 'nTOA'])
         self._n_pulsars = 0
         self._times = 0
+        self._freqs = 0
         self._hplus = 0
         self._hcross = 0
-        self._signal= 0
+        self._signal = 0
         self._noise = 0
+        self._signalFD = 0
+        self._noiseFD = 0
 
     @property
     def residuals(self):
         return self._signal + self._noise
+
+    @property
+    def residualsFD(self):
+        return self._signalFD + self._noiseFD
 
     def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
         """
@@ -87,6 +94,57 @@ class PTA_sim:
         self._signal = np.zeros_like(self._times)
         self._noise = np.zeros_like(self._times)
 
+    def fourier(self, freqs=np.linspace(1.0e-9, 1.0e-7, 100)):
+        """
+        Compute the Fourier domain signal and noise
+
+        Parameters
+        ----------
+        freqs: float or numpy array
+            User specified frequecies at which funky FT will be evaluated
+            These frequencies are the same for all pulsars
+        """
+        self._freqs = freqs
+
+        self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
+        self._noiseFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
+
+        for i in range(self._n_pulsars):
+
+            irregular_times = self._times[i][np.isfinite(self._times[i])]
+
+            weights = np.array([
+                            irregular_times[t_index+1]-irregular_times[t_index]
+                            if t_index<len(irregular_times)-1
+                            else 0
+                      for t_index in range(len(irregular_times)-1) ])
+            weights[-1] = irregular_times[-1] - np.sum(weights)
+
+            weights = np.ones(len(irregular_times))
+            M = np.array([
+                          [
+                            weights[t_index] * np.exp( -2.*np.pi*(1j)*f*irregular_times[t_index] )
+                           for t_index in range(len(irregular_times))]
+                          for f in self._freqs])
+
+            irregularly_sampled_signal = self._signal[i][np.isfinite(self._times[i])]
+            self._signalFD[i] = np.dot(M, irregularly_sampled_signal)
+
+            if np.shape(self._noise) is not ():
+                irregularly_sampled_noise = self._noise[i][np.isfinite(self._times[i])]
+                self._noiseFD[i] = np.dot(M, irregularly_sampled_noise)
+
+    def plot_residuals_FD(self):
+        """
+        Plot times vs residuals for all pulsars
+        """
+        res = self.residualsFD
+        fig, ax = plt.subplots(1)
+        for i in range(self._n_pulsars):
+            ax.plot(np.log10(self._freqs), np.log10(abs(res[i])), ls='-', marker='.')
+        ax.set_xlabel('log_10( frequency (Hz) )')
+        ax.set_ylabel('log_10( | residualsFD (s^2) | )')
+
 
 if __name__ == '__main__':
     print('An example of PTA sim')
@@ -114,12 +172,19 @@ if __name__ == '__main__':
     # inject a sinusoid signal
     # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
     from GW_models import sinusoid_TD
-    GW_args = [0.1, 1e-14, np.pi/7, 0.3, 1e-8]
+    GW_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
     source = (0.8 * np.pi, 1.3 * np.pi)
     sim.inject_signal(sinusoid_TD, source, *GW_args)
 
     # inject white noise
     sim.white_noise()
 
-    # not plot the residuals
+    # plot the residuals
     sim.plot_residuals()
+
+    # compute Fourier domain signal at user specified frequencies
+    frequencies = np.linspace(1.0e-9, 1.0e-7, 1000)
+    sim.fourier(frequencies)
+
+    # plot the Fourier domain residuals
+    sim.plot_residuals_FD()
