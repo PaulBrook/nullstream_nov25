@@ -51,7 +51,8 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     self._initiate_zero_residuals()
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
-                      min_cadence=1e5, t_start=0.0, t_end=20*YEAR):
+                      min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
+                      gaps=True, exp_gap_spacing=5*YEAR, exp_gap_length=1e7):
     """
     Randomized times from gaussian distributed cadences.
     
@@ -77,12 +78,22 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     t_end: float or numpy array
         (approximate) end time
         default = 20 years
-
+    gaps: bool
+        if True, put gaps in the sampling times
+        default = True
+    exp_gap_spacing: float or numpy array
+        expected gap spacing used to get the number of gaps from a poission distribution
+        default = 5 years
+    exp_gap_length: float or numpy array
+        scale for the exponential distribution used to make gap lengths
+        default = 1e7 seconds
     """
+    ### RANDOMIZED TIMES ###
     # get the number of TOAs for each pulsar
     # note: we don't take t_end to be exact, but just use it to get a number
     # of TOAs that will be randomized (so the exact start time depends on them).
-    nTOAs = np.ceil((t_end - t_start)/ mean_cadence).astype(int)
+    obs_time = t_end - t_start
+    nTOAs = np.ceil(obs_time/ mean_cadence).astype(int)
     self._pulsars['nTOA'] = nTOAs
     max_nTOAs = np.max(nTOAs)
 
@@ -105,62 +116,29 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
             times[psr, nTOAs[psr]:] = np.nan
     else:
         times[:, nTOAs:] = np.nan
+      
+    ### GAPS ###
+    if gaps:    
+        # poisson dist for generating gaps (get a number of gaps for each pulsar)
+        exp_ngaps = obs_time/exp_gap_spacing
+        ngaps = rd.poisson(exp_ngaps, self._n_pulsars)
+        
+        # convert exp_gap_length to array if it's a scaler (fills array with values)
+        exp_gap_length = np.broadcast_to(exp_gap_length, self._n_pulsars)
+
+        # place gaps
+        for psr in range(self._n_pulsars):
+            gap_start_times = rd.random(size=ngaps[psr]) * obs_time + t_start
+            gap_lengths = rd.exponential(scale=exp_gap_length[psr], size=ngaps[psr])
+            
+            # for each gap, set times within gap to nan
+            for gap_start, gap_length in zip(gap_start_times, gap_lengths):
+                in_gap = (times[psr] > gap_start) & (times[psr] < gap_start + gap_length)
+                times[psr, in_gap] = np.nan
 
     self._times = times
     self._initiate_zero_residuals()
 
-
-def gappy_times(self, mean_cadences=1e6, std_cadences=1e5, min_cadences=1e5,
-                t_ends=20*YEAR, t_starts=0, exp_gap_spacings=5*YEAR,
-                exp_gap_lengths=1e7):
-    """
-    Set times with random gaps and within different observation windows
-    for all pulsars. All parameters can be passed as a scalar (applied to
-    all pulsars equally) or an array of length n_pulsar
-    """
-    # get the number of TOAs for each pulsar
-    nTOAs = (np.array(t_ends) - np.array(t_starts))/np.array(mean_cadences)
-    nTOAs = np.ceil(nTOAs).astype(int)
-    nTOAs = np.broadcast_to(nTOAs, self._n_pulsars)
-    self._pulsars['nTOA'] = nTOAs
-
-    # draw cadences from a truncated gaussian distribution
-    # make array rectangular by drawing the max number needed
-    # this is wasteful of memory, but lets us use numpy routines more easily
-    cadences = np.random.normal(mean_cadences, std_cadences,
-                                (np.max(nTOAs), self._n_pulsars))
-    cadences = np.maximum(cadences, min_cadences)
-    cadences[0, :] = t_starts  # initial time
-
-    for psr in range(self._n_pulsars):
-        # set excess cadences to nan: variable nTOA,
-        # but still rectangular arrays so they can be treated easily
-        cadences[nTOAs[psr]:, psr] = np.nan
-
-    times = np.cumsum(cadences, 0)
-
-    # poisson dist for generating gaps
-    lambdas = (np.array(t_ends) - np.array(t_starts))/exp_gap_spacings
-    ngaps = np.random.poisson(lambdas, self._n_pulsars)
-
-    # make sure the gap lengths, mean cadences are arrays of the right size
-    exp_gap_lengths = np.broadcast_to(exp_gap_lengths, self._n_pulsars)
-    mean_cadences = np.broadcast_to(mean_cadences, self._n_pulsars)
-
-    # place gaps
-    for psr in range(self._n_pulsars):
-        # random gap location (uniform) & length (exponential)
-        gap_start_idx = np.random.randint(0, nTOAs[psr], ngaps[psr])
-        gap_lengths = np.random.exponential(exp_gap_lengths[psr], ngaps[psr])
-
-        # convert physical length to array length
-        gap_points = gap_lengths/mean_cadences[psr]
-        gap_points = np.floor(gap_points).astype(int)
-
-        for g1, g2 in zip(gap_start_idx, gap_start_idx + gap_points):
-            times[g1:g2, psr] = np.nan
-
-    self._times = times.T
 
 def times_from_tim_file(self, filepath):
     """
@@ -169,4 +147,4 @@ def times_from_tim_file(self, filepath):
     # TODO
     pass
 
-functions = [_initiate_zero_residuals, evenly_sampled_times, randomized_times, gappy_times]
+functions = [_initiate_zero_residuals, evenly_sampled_times, randomized_times]
