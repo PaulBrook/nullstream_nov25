@@ -32,8 +32,6 @@ class PTA_sim:
         self._n_pulsars = 0
         self._times = 0
         self._freqs = 0
-        self._hplus = 0
-        self._hcross = 0
         self._signal = 0
         self._noise = 0
         self._signalFD = 0
@@ -51,12 +49,13 @@ class PTA_sim:
         """
         Inject signal into the residuals.
         """
-        self._hplus, self._hcross = signal_func(self._times, *signal_args, **signal_kwargs)
+        hplus, hcross = signal_func(self._times, *signal_args, **signal_kwargs)
         responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
         Fplus = np.expand_dims(responses[:, 0], -1)
         Fcross = np.expand_dims(responses[:, 1], -1)
-        # add to signal in case we want multiple injections done
-        self._signal += Fplus * self._hplus + Fcross * self._hcross
+        
+        # add to current signal in case we want multiple injections done
+        self._signal += Fplus * hplus + Fcross * hcross
 
     def white_noise(self):
         """
@@ -89,44 +88,76 @@ class PTA_sim:
         """
         Delete any signal and noise from the residuals.
         """
-        self._hplus = None
-        self._hcross = None
         self._signal = np.zeros_like(self._times)
         self._noise = np.zeros_like(self._times)
-
-    def fourier(self, freqs=np.linspace(1.0e-9, 1.0e-7, 100)):
+        
+    
+    # we can make different functions like these to get different frequency spacings etc
+    # FIXME maybe weights should also be computed here? (now commented out)
+    def _linear_freqs(self, fmax=1e-7, alpha=1):
         """
-        Compute the Fourier domain signal and noise
-
-        Parameters
-        ----------
-        freqs: float or numpy array
-            User specified frequecies at which funky FT will be evaluated
-            These frequencies are the same for all pulsars
+        Choose linear grid of frequencies.
         """
-        self._freqs = freqs
+        # set minimum frequency based on longest time span between any TOAs
+        # with alpha some integer constant of order 1 or experiment with higher alpha
+        Tmax = np.max(self._times) - np.min(self._times)
+        fmin = 1 / (alpha * Tmax)
+        # fmax chosen based on astrophysical prior, step same as fmin
+        self._freqs = np.arange(fmin, fmax, step=fmin)
+        
+#        # compute weights per pulsar, then stack together to save in class
+#        all_weights = []
+#        for i in range(self._n_pulsars):
+#
+#            # get times that aren't nan
+#            irregular_times = self._times[i][np.isfinite(self._times[i])]
+#
+#            weights = np.array([
+#                            irregular_times[t_index+1]-irregular_times[t_index]
+#                            if t_index<len(irregular_times)-1
+#                            else 0
+#                            for t_index in range(len(irregular_times)-1) ])
+#            weights[-1] = irregular_times[-1] - np.sum(weights)
+#
+#            weights = np.ones(len(irregular_times))
+#            
+#            all_weights.append(weights)
+#        
+#        self._weights = np.vstack(all_weights)
+            
 
+    def fourier(self):
+        """
+        Compute the Fourier domain signal and noise.
+        """
+        # only implemented linear frequency spacing for now
+        self._linear_freqs()
+        
         self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
         self._noiseFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
 
         for i in range(self._n_pulsars):
-
+            
+            # get times that aren't nan
             irregular_times = self._times[i][np.isfinite(self._times[i])]
 
             weights = np.array([
                             irregular_times[t_index+1]-irregular_times[t_index]
                             if t_index<len(irregular_times)-1
                             else 0
-                      for t_index in range(len(irregular_times)-1) ])
+                            for t_index in range(len(irregular_times)-1) ])
             weights[-1] = irregular_times[-1] - np.sum(weights)
 
+            # FIXME lines above do nothing if we just set all weights to one
             weights = np.ones(len(irregular_times))
-            M = np.array([
-                          [
-                            weights[t_index] * np.exp( -2.*np.pi*(1j)*f*irregular_times[t_index] )
-                           for t_index in range(len(irregular_times))]
-                          for f in self._freqs])
+            
+            #matrix m_ij of weights(t_i) * exp(-2*pi*i*f_j*t_i)
+            M = np.array([[
+                        weights[t_index] * np.exp(-2.*np.pi*(1j)*f*irregular_times[t_index])
+                        for t_index in range(len(irregular_times))]
+                        for f in self._freqs])
 
+            # get signal without nans
             irregularly_sampled_signal = self._signal[i][np.isfinite(self._times[i])]
             self._signalFD[i] = np.dot(M, irregularly_sampled_signal)
 
@@ -182,9 +213,8 @@ if __name__ == '__main__':
     # plot the residuals
     sim.plot_residuals()
 
-    # compute Fourier domain signal at user specified frequencies
-    frequencies = np.linspace(1.0e-9, 1.0e-7, 1000)
-    sim.fourier(frequencies)
+    # compute Fourier domain signal
+    sim.fourier()
 
     # plot the Fourier domain residuals
     sim.plot_residuals_FD()

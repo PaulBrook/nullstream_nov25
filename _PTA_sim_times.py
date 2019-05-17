@@ -27,16 +27,12 @@ def _initiate_zero_residuals(self):
     # add default (zeroed) values for other quantities
     # these are all per pulsar to be compatible with potentially different
     # numbers of TOAs per pulsar
-    self._hplus = np.zeros_like(self._times) 
-    self._hcross = np.zeros_like(self._times) 
     self._signal = np.zeros_like(self._times)
     self._noise = np.zeros_like(self._times)
     
     # values where times has a nan (padding to get rectangular arrays) are
     # also set to nan
     padding = np.isnan(self._times)
-    self._hplus[padding] = np.nan
-    self._hcross[padding] = np.nan
     self._signal[padding] = np.nan
     self._noise[padding] = np.nan
     
