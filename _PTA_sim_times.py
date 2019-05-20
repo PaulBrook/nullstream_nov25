@@ -27,8 +27,8 @@ def _initiate_zero_residuals(self):
     # add default (zeroed) values for other quantities
     # these are all per pulsar to be compatible with potentially different
     # numbers of TOAs per pulsar
-    self._signal = np.zeros_like(self._times)
-    self._noise = np.zeros_like(self._times)
+    self._signal = np.zeros_like(self._times, dtype=float)
+    self._noise = np.zeros_like(self._times, dtype=float)
     
     # values where times has a nan (padding to get rectangular arrays) are
     # also set to nan
@@ -44,7 +44,10 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     self._pulsars['nTOA'] = len(times)
     self._times = np.array((times,)*self._n_pulsars)
 
+    # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
+    # need to redo fourier setup after times changed
+    self._TOA_fourier_ready
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                       min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
@@ -133,7 +136,11 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                 times[psr, in_gap] = np.nan
 
     self._times = times
+
+    # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
+    # need to redo fourier setup after times changed
+    self._TOA_fourier_ready = False
 
 
 def times_from_tim_file(self, filepath):
@@ -142,5 +149,10 @@ def times_from_tim_file(self, filepath):
     """
     # TODO
     pass
+
+#    # st residuals to zero and correct shape for times
+#    self._initiate_zero_residuals()
+#    # need to redo fourier setup after times changed
+#    self._TOA_fourier_ready
 
 functions = [_initiate_zero_residuals, evenly_sampled_times, randomized_times]
