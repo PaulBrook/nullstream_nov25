@@ -185,25 +185,22 @@ def inv_transformed_cov(T, Cinv):
 
 def null_streams(data, invC, source, pulsars):
     """
-    Construct signal streams + null streams from single frequency data.
+    Construct signal streams + null streams from TD or FD data
     
-    Data and pulsars are numpy arrays of the same lenght (first dimension is 
-    the same) because the data at a single frequency is just a single number
-    for each pulsar.
-    Incidentally this function does work for time domain data as well (in which
-    case the data would have two dimensions, the second one for the number of
-    observations in time).
+    Data and pulsars are numpy arrays with the same length N (first dimension), 
+    i.e. we have a data stream for each pulsar. The data stream can be in time
+    or frequency domain, or can be a single number for single frequency data.
     
     Parameters
     ----------
     data: numpy array
-        single frequency data point for each pulsar
+        (N x ndata) data stream (or point) for each pulsar
     invC: numpy array
-        inverse covariance matrix for the data
+        (N x N) inverse covariance matrix for the data
     source: numpy array
         source location (theta, phi)
     pulsars: numpy array
-        N x 2 array of theta, phi coordinates of pulsars
+        N x 2 array of theta, phi coordinates of the N pulsars
         theta: polar angle of the pulsar position in radians, between 0 and pi
         phi: azimuthal angle of the pulsar position in radians, between 0 and 2 pi
     
@@ -213,7 +210,7 @@ def null_streams(data, invC, source, pulsars):
         first two entries are reconstructed signal, then N-2 null streams 
         (where N is the number of pulsars)
     numpy array
-        transformed inverse covariance matrix to go with null stream data
+        (N x N) transformed inverse covariance matrix to go with null stream data
     """
     M = construct_M(*source, pulsars)
     null_streams = np.dot(M, data)

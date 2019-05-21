@@ -103,6 +103,7 @@ def fourier_residuals(self):
         if np.shape(self._noise) is not ():
             irregularly_sampled_noise = self._noise[i][np.isfinite(self._times[i])]
             self._noiseFD[i] = np.dot(fourier_M, irregularly_sampled_noise)
+    
             
 def fourier_model(self, model, *args, **kwargs):
     """

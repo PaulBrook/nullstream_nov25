@@ -90,6 +90,21 @@ def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     hplus, hcross = rotate_wave(hplus, hcross, pol)
     return hplus, hcross
     
+def sinusoid_TD_zerophase(times, amp, pol, cosi, GW_ang_freq):
+    """
+    Simple sinusoid model for GW binary residuals in frequency domain.
+    
+    To get residuals rather than redshift, the original GW model is analytically 
+    integrated over time once. To use for analytical phase marginalisation, 
+    the phase is always zero.
+    
+    Paramters
+    ---------
+    see sinusoid_FD (apart from phase which is set to zero)
+    """
+    return sinusoid_TD(times, 0.0, amp, pol, cosi, GW_ang_freq, integrate=True)
+
+
 def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
     """
     Simple sinusoid model for a GW binary in frequency domain.

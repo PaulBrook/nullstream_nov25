@@ -27,7 +27,6 @@ def _check_empty_pulsars(self, overwrite=False):
         else:
             raise ValueError('Already have pulsar data, specify overwrite=True')
 
-
 def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, overwrite=False):
     """
     Pick n random pulsars, uniformly distributed over the sky.
@@ -56,7 +55,9 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, overwrite=False):
 
     # normal distribution of rms values
     self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
-
+    
+    # save the inverse covariance matrix of the pulsar residuals (Time Domain) 
+    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     """
@@ -86,7 +87,9 @@ def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     self._pulsars['theta'] = pulsar_locations[:, 0]
     self._pulsars['phi'] = pulsar_locations[:, 1]
     self._pulsars['rms'] = rms
-
+    
+    # save the inverse covariance matrix of the pulsar residuals (Time Domain) 
+    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
                       skip_lines=1, overwrite=False):
@@ -120,6 +123,9 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
 
     # get rms from column 4 and convert microseconds in PTA data to seconds
     self._pulsars['rms'] = 1.0e-6 * PTAdata[:, 4]
+    
+    # save the inverse covariance matrix of the pulsar residuals
+    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 
 def plot_pulsar_map(self):
@@ -129,7 +135,7 @@ def plot_pulsar_map(self):
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
-        
+
         
 # functions we want to add as methods to the main PTA_sim class
 functions = [_check_empty_pulsars, random_pulsars, set_pulsars, pulsars_from_file, plot_pulsar_map]
