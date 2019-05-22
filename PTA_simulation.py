@@ -20,7 +20,7 @@ except:
     from from_jannasutils import radec_location_to_ang, isIterable
 
 #from nullstream_algebra import response_matrix
-from nullstream_algebra import null_streams
+from nullstream_algebra import null_streams, response_matrix
 import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
 import _PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections
@@ -73,7 +73,83 @@ class PTA_sim:
     # ... likelihood, cpnest etc etc
     
     
-    def log_likelihood(self, source, model_func, model_args, **model_kwargs):
+    def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
+        
+        times = self._times[0]
+        model_hplus, model_hcross = model_func(times, *model_args)
+        responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
+        Fplus = np.expand_dims(responses[:, 0], -1)
+        Fcross = np.expand_dims(responses[:, 1], -1)
+        model = Fplus * model_hplus + Fcross * model_hcross
+
+        x = self.residuals - model
+        product_alltimes = np.einsum('i...,ik,k...', np.conj(x), self._inv_cov_residuals, x)
+        real_product = 4 * np.real(product_alltimes)
+        product = np.trapz(real_product, x=times)
+        norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+        print('norm', norm)
+        return -0.5 * product #- norm
+    
+        
+    def FD_inner_product(self, a, b, inv_cov):
+        """
+        noise-weighted inner product over frequency-domain quantities a and b.
+        """
+        # inner product per frequency
+        product = np.einsum('i...,ik,k...', np.conj(a), inv_cov, b)
+        real_product = 4 * np.real(product)
+        # integrate over the frequencies
+        freq_int = np.trapz(real_product, x=self._freqs)
+        return freq_int
+    
+    
+    def log_likelihood_simple(self, source, model_func, model_args, **model_kwargs):
+        
+        # call model function with args and preset model times, then funky fourier
+        fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
+                                                    *model_args, **model_kwargs)
+        
+        # apply PTA responses to model hplus, hcross
+        responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
+        Fplus = np.expand_dims(responses[:, 0], -1)
+        Fcross = np.expand_dims(responses[:, 1], -1)
+        model = Fplus * fourier_hplus + Fcross * fourier_hcross
+        
+        x = self.residualsFD - model
+        product = self.FD_inner_product(x, x, self._inv_cov_residuals)
+        norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+        print('norm', norm)
+        return -0.5 * product #- norm
+    
+    
+    def log_likelihood_ns(self, source, model_func, model_args, **model_kwargs):
+        """
+        Log likelihood without analytical phi marginalization
+        """
+        # convert residuals data to null streams
+        pulsar_array = self._pulsars[['theta', 'phi']].values
+        ns_data, ns_inv_cov = null_streams(self.residualsFD, self._inv_cov_residuals, 
+                                        source, pulsar_array)
+        
+        # call model function with args and preset model times, then funky fourier
+        fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
+                                                *model_args, **model_kwargs)
+        
+        # combine hplus, hcross with null streams to get full model
+        nulls = (np.zeros_like(fourier_hplus),)*(self._n_pulsars-2)
+        ns_model = np.hstack((fourier_hplus, fourier_hcross, *nulls)).reshape(
+                                           self._n_pulsars, len(fourier_hplus))
+        
+        x = ns_data - ns_model
+        product = self.FD_inner_product(x, x, ns_inv_cov)
+        norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(ns_inv_cov))
+        print('norm', norm)
+        return -0.5 * product #- norm
+    
+    
+    
+    
+    def log_likelihood_ns_phi_marg(self, source, model_func, model_args, **model_kwargs):
         """
         Log likelihood using nullstreams, analytically marginalized over phase.
         
@@ -121,57 +197,64 @@ class PTA_sim:
         #return l * 2.0*np.pi
         return logl
     
-    def FD_inner_product(self, a, b, inv_cov):
-        product = np.abs(np.einsum('i...,ik,k...', np.conj(a), inv_cov, b))
-        freq_int = np.trapz(product, x=self._freqs)
-        return freq_int
-        
-        
-    
+
 
 if __name__ == '__main__':
     rd.seed(1234)
     
-    print('An example of PTA sim')
-    # make a simulation object (we may want to have initialisation options that
-    # automatically do the next few steps, but for now we do them by hand)
-    Npsr = 5
-    sim = PTA_sim()
-
-    # make some pulsars, in this case 5 random ones with some variation in rms
-    # and plot a skymap (bigger markers are better pulsars)
-    sim.random_pulsars(Npsr, sig_rms=5e-8)
-    sim.plot_pulsar_map()
-
-    # set some evenly sampled times (default options)
-    #sim.evenly_sampled_times()
-     
-    # randomized times
-    sim.randomized_times()
-
-    # generate some (very) unevenly sampled times
-#    mean_cadences = 10**np.random.normal(6, 0.5, Npsr) # lognormal
-#    t_starts = np.random.rand(Npsr) * 10 * YEAR
-#    exp_gap_spacings = 10**np.random.normal(0.5, 0.5, Npsr) * YEAR
+#    print('An example of PTA sim')
+#    # make a simulation object (we may want to have initialisation options that
+#    # automatically do the next few steps, but for now we do them by hand)
+#    Npsr = 5
+#    sim = PTA_sim()
 #
-#    sim.gappy_times(mean_cadences=mean_cadences, t_starts=t_starts,
-#                    exp_gap_spacings = exp_gap_spacings)
-
-    # inject a sinusoid signal
-    # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
+#    # make some pulsars, in this case 5 random ones with some variation in rms
+#    # and plot a skymap (bigger markers are better pulsars)
+#    sim.random_pulsars(Npsr, sig_rms=5e-8)
+#    sim.plot_pulsar_map()
+#
+#    # set some evenly sampled times (default options)
+#    #sim.evenly_sampled_times()
+#     
+#    # randomized times
+#    sim.randomized_times()
+#
+#    # generate some (very) unevenly sampled times
+##    mean_cadences = 10**np.random.normal(6, 0.5, Npsr) # lognormal
+##    t_starts = np.random.rand(Npsr) * 10 * YEAR
+##    exp_gap_spacings = 10**np.random.normal(0.5, 0.5, Npsr) * YEAR
+##
+##    sim.gappy_times(mean_cadences=mean_cadences, t_starts=t_starts,
+##                    exp_gap_spacings = exp_gap_spacings)
+#
+#    # inject a sinusoid signal
+#    # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
+#    from GW_models import sinusoid_TD
+#    GW_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
+#    source = (0.8 * np.pi, 1.3 * np.pi)
+#    sim.inject_signal(sinusoid_TD, source, *GW_args)
+#
+#    # inject white noise
+#    sim.white_noise()
+#
+#    # plot the residuals
+#    sim.plot_residuals()
+#
+#    # compute Fourier domain residuals
+#    sim.fourier_residuals()
+#
+#    # plot the Fourier domain residuals
+#    sim.plot_residuals_FD()
+    
+    sim = PTA_sim()
+    sim.random_pulsars(5, mean_rms=1e-7, sig_rms=3e-8)
+    sim.evenly_sampled_times()
+    
     from GW_models import sinusoid_TD
-    GW_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
-    source = (0.8 * np.pi, 1.3 * np.pi)
-    sim.inject_signal(sinusoid_TD, source, *GW_args)
-
-    # inject white noise
-    sim.white_noise()
-
-    # plot the residuals
-    sim.plot_residuals()
-
-    # compute Fourier domain residuals
+    sinusoid_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
+    source = (0.8*np.pi, 1.3*np.pi)
+    sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+    
     sim.fourier_residuals()
-
-    # plot the Fourier domain residuals
-    sim.plot_residuals_FD()
+    
+    

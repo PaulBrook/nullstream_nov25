@@ -78,6 +78,9 @@ def _setup_model_fourier(self):
     t_max = np.max(all_times_not_nan) + step
     self._model_times = np.arange(t_min, t_max, step=step)
     
+#    ## TEST same model times as evenly sampled TOA times
+#    self._model_times = self._times[0]
+    
     weights, mat = self._weights_matrix(self._model_times, self._freqs)
     self._model_weights = weights
     self._model_fourier_mat = mat
