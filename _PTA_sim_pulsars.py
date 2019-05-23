@@ -17,7 +17,7 @@ try:
 except:
     # use hacked excerpt from jannasutils
     from from_jannasutils import radec_location_to_ang
-    
+
 
 def _check_empty_pulsars(self, overwrite=False):
     if not self._pulsars.empty:
@@ -27,9 +27,10 @@ def _check_empty_pulsars(self, overwrite=False):
         else:
             raise ValueError('Already have pulsar data, specify overwrite=True')
 
-def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, overwrite=False):
+def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
+                   overwrite=False):
     """
-    Pick n random pulsars, uniformly distributed over the sky.
+    Pick n random pulsars from across the sky.
 
     Parameters
     ----------
@@ -42,21 +43,31 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, overwrite=False):
         with this as its standard deviation (except negative values
         are mapped to their positive counterpart)
         default = 0
+    uniform: If true, draw pulsars evenly across the sky. Otherwise, choose
+        from a distribution weighted by the population of known msps
     overwrite: If true, overwrite already existing pulsars with new ones
         default = False
     """
     self._check_empty_pulsars(overwrite=overwrite)
     self._n_pulsars = n
 
-    # random locations on the sphere
-    random_ab = rd.rand(n, 2)
-    self._pulsars['theta'] = np.arccos(random_ab[:, 0]*2 - 1)
-    self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
+    if uniform:
+        # random locations on the sphere
+        random_ab = rd.rand(n, 2)
+        self._pulsars['theta'] = np.arccos(random_ab[:, 0]*2 - 1)
+        self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
+    else:
+        # draw randomly from weighted set of healpix pixels (see Roebber 2019)
+        weights = np.loadtxt('msp_weight_map.dat')
+        npix = np.size(weights)
+        nside = hp.npix2nside(npix)
+        pix = np.random.choice(npix, n, replace=False, p=weights)
+        self._pulsars['theta'], self._pulsars['phi'] = hp.pix2ang(nside, pix)
 
     # normal distribution of rms values
     self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
-    
-    # save the inverse covariance matrix of the pulsar residuals (Time Domain) 
+
+    # save the inverse covariance matrix of the pulsar residuals (Time Domain)
     self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
@@ -87,8 +98,8 @@ def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     self._pulsars['theta'] = pulsar_locations[:, 0]
     self._pulsars['phi'] = pulsar_locations[:, 1]
     self._pulsars['rms'] = rms
-    
-    # save the inverse covariance matrix of the pulsar residuals (Time Domain) 
+
+    # save the inverse covariance matrix of the pulsar residuals (Time Domain)
     self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
@@ -123,7 +134,7 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
 
     # get rms from column 4 and convert microseconds in PTA data to seconds
     self._pulsars['rms'] = 1.0e-6 * PTAdata[:, 4]
-    
+
     # save the inverse covariance matrix of the pulsar residuals
     self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
@@ -136,6 +147,6 @@ def plot_pulsar_map(self):
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
 
-        
+
 # functions we want to add as methods to the main PTA_sim class
 functions = [_check_empty_pulsars, random_pulsars, set_pulsars, pulsars_from_file, plot_pulsar_map]
