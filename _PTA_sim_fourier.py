@@ -15,10 +15,12 @@ import matplotlib.pyplot as plt
 # we can make different functions like these to get different frequency spacings etc
 
 def _weights_matrix(self, times, freqs):
-    # append ensures we get n diff values if there are n times (instead of n-1)
-    weights = np.diff(times, append=times[-1])
-    # FIXME what should the last weight be??? 
-    weights[-1] = times[-1] - np.sum(weights)
+    # we want the first weight to be t1 - t0, the last to be tn - t(n-1), and 
+    # all the rest to be 1/2 (t(i+1) - t(i)) + 1/2 (t(i) - t(i-1))
+    middle_weights = 0.5 * np.diff(times)[:-1] + 0.5 * np.diff(times)[1:]
+    first_weight = np.array([times[1] - times[0]])
+    last_weight = np.array([times[-1] - times[-2]])
+    weights = np.concatenate((first_weight, middle_weights, last_weight))
         
     #matrix m_ij of weights(t_i) * exp(-2*pi*i*f_j*t_i)
     expanded_freqs = np.expand_dims(self._freqs, axis=-1)
@@ -37,8 +39,7 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1):
     """
     # set minimum frequency based on longest time span between any TOAs
     # with alpha some integer constant of order 1 or experiment with higher alpha
-    all_times_not_nan = self._times[np.isfinite(self._times)]
-    Tmax = np.max(all_times_not_nan) - np.min(all_times_not_nan)
+    Tmax = np.nanmax(self._times) - np.nanmin(self._times)
     fmin = 1 / (alpha * Tmax)
     # fmax chosen based on astrophysical prior, step same as fmin
     self._freqs = np.arange(fmin, fmax+fmin, step=fmin)
@@ -73,9 +74,8 @@ def _setup_model_fourier(self):
     # The maximum frequency gives us a cadence
     step = 1 / (2 * np.max(self._freqs))
     # start before the first TOA and end after the last
-    all_times_not_nan = self._times[np.isfinite(self._times)]
-    t_min = np.min(all_times_not_nan) - step
-    t_max = np.max(all_times_not_nan) + step
+    t_min = np.nanmin(self._times) - step
+    t_max = np.nanmax(self._times) + step
     self._model_times = np.arange(t_min, t_max, step=step)
     
 #    ## TEST same model times as evenly sampled TOA times

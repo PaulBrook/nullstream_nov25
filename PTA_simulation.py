@@ -202,59 +202,48 @@ class PTA_sim:
 if __name__ == '__main__':
     rd.seed(1234)
     
-#    print('An example of PTA sim')
+    print('An example of PTA sim')
 #    # make a simulation object (we may want to have initialisation options that
-#    # automatically do the next few steps, but for now we do them by hand)
-#    Npsr = 5
-#    sim = PTA_sim()
-#
-#    # make some pulsars, in this case 5 random ones with some variation in rms
-#    # and plot a skymap (bigger markers are better pulsars)
-#    sim.random_pulsars(Npsr, sig_rms=5e-8)
-#    sim.plot_pulsar_map()
-#
-#    # set some evenly sampled times (default options)
-#    #sim.evenly_sampled_times()
-#     
-#    # randomized times
-#    sim.randomized_times()
-#
-#    # generate some (very) unevenly sampled times
-##    mean_cadences = 10**np.random.normal(6, 0.5, Npsr) # lognormal
-##    t_starts = np.random.rand(Npsr) * 10 * YEAR
-##    exp_gap_spacings = 10**np.random.normal(0.5, 0.5, Npsr) * YEAR
-##
-##    sim.gappy_times(mean_cadences=mean_cadences, t_starts=t_starts,
-##                    exp_gap_spacings = exp_gap_spacings)
-#
-#    # inject a sinusoid signal
-#    # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
-#    from GW_models import sinusoid_TD
-#    GW_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
-#    source = (0.8 * np.pi, 1.3 * np.pi)
-#    sim.inject_signal(sinusoid_TD, source, *GW_args)
-#
-#    # inject white noise
-#    sim.white_noise()
-#
-#    # plot the residuals
-#    sim.plot_residuals()
-#
-#    # compute Fourier domain residuals
-#    sim.fourier_residuals()
-#
-#    # plot the Fourier domain residuals
-#    sim.plot_residuals_FD()
-    
+    # automatically do the next few steps, but for now we do them by hand)
+    Npsr = 5
     sim = PTA_sim()
-    sim.random_pulsars(5, mean_rms=1e-7, sig_rms=3e-8)
-    sim.evenly_sampled_times()
-    
+
+    # make some pulsars, in this case 5 random ones with some variation in rms
+    # and plot a skymap (bigger markers are better pulsars)
+    sim.random_pulsars(Npsr, sig_rms=5e-8)
+    sim.plot_pulsar_map()
+
+    # set some evenly sampled times (default options)
+    #sim.evenly_sampled_times()
+     
+    # randomized times
+    sim.randomized_times()
+
+    # generate some (very) unevenly sampled times
+#    mean_cadences = 10**np.random.normal(6, 0.5, Npsr) # lognormal
+#    t_starts = np.random.rand(Npsr) * 10 * YEAR
+#    exp_gap_spacings = 10**np.random.normal(0.5, 0.5, Npsr) * YEAR
+#
+#    sim.gappy_times(mean_cadences=mean_cadences, t_starts=t_starts,
+#                    exp_gap_spacings = exp_gap_spacings)
+
+    # inject a sinusoid signal
+    # arguments are: phase, amplitude, polarization, cos(i), GW frequency (rd/s)
     from GW_models import sinusoid_TD
-    sinusoid_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
-    source = (0.8*np.pi, 1.3*np.pi)
-    sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
-    
+    GW_args = [0.1, 1e-12, np.pi/7, 0.3, 4e-8]
+    source = (0.8 * np.pi, 1.3 * np.pi)
+    sim.inject_signal(sinusoid_TD, source, *GW_args)
+
+    # inject white noise
+    sim.white_noise()
+
+    # plot the residuals
+    sim.plot_residuals()
+
+    # compute Fourier domain residuals
     sim.fourier_residuals()
+
+    # plot the Fourier domain residuals
+    sim.plot_residuals_FD()
     
     
