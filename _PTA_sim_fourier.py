@@ -27,22 +27,30 @@ def _weights_matrix(self, times, freqs):
     mat = weights * np.exp(-2*np.pi*(1j)*expanded_freqs*times)
     return weights, mat
 
-def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1):
+def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_frequencies=None):
     """
     Set up for the funky fourier on the TOA residuals with unevenly sampled times.
     
     Chooses a regular grid of frequencies with fmin = 1/(alpha * Tmax), where
     Tmax is the maximum time between any two TOAs in the data set. The frequency
-    spacing is also fmin. Compute the weights as w(t_j)  = t_j+1 - t_j, with
-    w_n = 0??? the last weight, for a pulsar with n TOAs. Then the fourier
-    matrix is m_jk = w(t_j) * exp(-2*pi*i*f_k*t_j), with j TOAs and k frequencies.
+    spacing is also fmin. 
+    Compute the weights as w(t_j)  = (1/2) (t_j+1 - t_j) + (1/2) (t_j - t_j-1), 
+    with the first w_0 = t_1 - t_0, and the last weight w_n = t_n - t_n-1. 
+    Then the fourier matrix is m_jk = w(t_j) * exp(-2*pi*i*f_k*t_j), with j 
+    TOAs and k frequencies.
+    
+    Use overwrite_frequencies = np.array to manually choose an array of
+    frequencies instead (no guarantee they make sense)
     """
-    # set minimum frequency based on longest time span between any TOAs
-    # with alpha some integer constant of order 1 or experiment with higher alpha
-    Tmax = np.nanmax(self._times) - np.nanmin(self._times)
-    fmin = 1 / (alpha * Tmax)
-    # fmax chosen based on astrophysical prior, step same as fmin
-    self._freqs = np.arange(fmin, fmax+fmin, step=fmin)
+    if overwrite_frequencies is not None:
+        self._freqs = overwrite_frequencies
+    else:
+        # set minimum frequency based on longest time span between any TOAs
+        # with alpha some integer constant of order 1 or experiment with higher alpha
+        Tmax = np.nanmax(self._times) - np.nanmin(self._times)
+        fmin = 1 / (alpha * Tmax)
+        # fmax chosen based on astrophysical prior, step same as fmin
+        self._freqs = np.arange(fmin, fmax+fmin, step=fmin)
     
     # create empty fourier domain signal and noise of the right shape
     self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
