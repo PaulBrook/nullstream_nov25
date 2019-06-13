@@ -15,6 +15,11 @@ import matplotlib.pyplot as plt
 # we can make different functions like these to get different frequency spacings etc
 
 def _weights_matrix(self, times, freqs):
+    """
+    Note: passing frequencies as times, and times as freqs will yield the weights
+    matrix for the inverse fourier (I think?)
+    """
+    
     # we want the first weight to be t1 - t0, the last to be tn - t(n-1), and 
     # all the rest to be 1/2 (t(i+1) - t(i)) + 1/2 (t(i) - t(i-1))
     middle_weights = 0.5 * np.diff(times)[:-1] + 0.5 * np.diff(times)[1:]
@@ -23,7 +28,7 @@ def _weights_matrix(self, times, freqs):
     weights = np.concatenate((first_weight, middle_weights, last_weight))
         
     #matrix m_ij of weights(t_i) * exp(-2*pi*i*f_j*t_i)
-    expanded_freqs = np.expand_dims(self._freqs, axis=-1)
+    expanded_freqs = np.expand_dims(freqs, axis=-1)
     mat = weights * np.exp(-2*np.pi*(1j)*expanded_freqs*times)
     return weights, mat
 
@@ -98,6 +103,9 @@ def _setup_model_fourier(self):
 def fourier_residuals(self):
     """
     Compute the Fourier domain signal and noise.
+    
+    If you want to use custom frequency, run _setup_TOAs_fourier with
+    overwrite_frequencies prior to this function.
     """
     if not self._TOA_fourier_ready:
         print("First time fourier of TOAs, setting up...")
@@ -119,6 +127,9 @@ def fourier_residuals(self):
 def fourier_model(self, model, *args, **kwargs):
     """
     Get funky fourier of the model (at previously set times).
+    
+    If you want to use custom frequency, run _setup_TOAs_fourier with
+    overwrite_frequencies prior to this function.
     
     Parameters
     ----------
