@@ -17,14 +17,14 @@ try:
     from jannasutils import radec_location_to_ang, isIterable
 except:
     # use hacked excerpt from jannasutils
-    from from_jannasutils import radec_location_to_ang, isIterable
+    from .from_jannasutils import radec_location_to_ang, isIterable
 
 #from nullstream_algebra import response_matrix
-from nullstream_algebra import null_streams, response_matrix
-import class_utils
+from .nullstream_algebra import null_streams, response_matrix
+from . import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
-import _PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections
-from _PTA_sim_times import YEAR
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections)
+from ._PTA_sim_times import YEAR
 
 
 @class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions + 

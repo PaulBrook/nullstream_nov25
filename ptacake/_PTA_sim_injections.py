@@ -11,7 +11,7 @@ import numpy as np
 import numpy.random as rd
 import matplotlib.pyplot as plt
 
-from nullstream_algebra import response_matrix
+from .nullstream_algebra import response_matrix
 
 def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
     """
