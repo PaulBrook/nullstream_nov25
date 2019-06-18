@@ -16,7 +16,7 @@ class Test_funky_fourier(unittest.TestCase):
         Test whether the funky fourier transform reduces to the FFT for evenly sampled
         data, and the same choice of frequencies as the FFT.
         """
-        sim = setup_evenly_sampled(seed=1234567)
+        sim = setup_evenly_sampled(seed=1234567, default_signal=True)
         sim.plot_residuals()
         
         Dt = sim._times[0][1] - sim._times[0][0]

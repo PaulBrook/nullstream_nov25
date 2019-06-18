@@ -13,7 +13,7 @@ import numpy.random as rd
 from ptacake import PTA_sim, YEAR
 
 
-def setup_evenly_sampled(n_pulsars=5, seed=None):
+def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
     """
     Setup an example sim with evenly sampled times and a sinusoid signal, no noise.
     
@@ -29,6 +29,9 @@ def setup_evenly_sampled(n_pulsars=5, seed=None):
     seed: None or int
         if int, use as random seed
         default = None
+    default_signal: bool
+        if True, also inject some standard sinusoid signal
+        default = False
         
     Returns
     -------
@@ -50,14 +53,15 @@ def setup_evenly_sampled(n_pulsars=5, seed=None):
     #finite_times = sim._times[np.isfinite(sim._times)]
     #t_end = np.max(finite_times)
     
-    ## make a test sinusoidal signal
-    from ptacake.GW_models import sinusoid_TD
-    GW_freq = 2e-8
-    GW_ang_freq = 2*np.pi*GW_freq
-    # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
-    sinusoid_args = [0.123, 1e-116, np.pi/7, 0.5, GW_ang_freq]
-    # choose source (theta, phi) coordinates
-    source = (0.8*np.pi, 1.3*np.pi)
-    sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+    if default_signal:
+        ## make a test sinusoidal signal
+        from ptacake.GW_models import sinusoid_TD
+        GW_freq = 2e-8
+        GW_ang_freq = 2*np.pi*GW_freq
+        # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
+        sinusoid_args = [0.123, 1e-16, np.pi/7, 0.5, GW_ang_freq]
+        # choose source (theta, phi) coordinates
+        source = (0.8*np.pi, 1.3*np.pi)
+        sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
     
     return sim

@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun 18 14:50:47 2019
+
+@author: jgoldstein
+"""
+import numpy as np
+
+from .nullstream_algebra import null_streams, response_matrix
+
+
+### Noise-weighted inner product (TD or FD) ### 
+
+def inner_product(a, b, inv_cov, steps):
+    """
+    noise-weighted inner product over quantities a and b
+    steps can be either times or freqs for TD or FD inner product,
+    as long as a = a(steps), b = b(steps).
+    """
+    # inner product per step
+    product = np.einsum('i...,ik,k...', np.conj(a), inv_cov, b)
+    real_product = 4 * np.real(product)
+    # integrate over the steps (times or freqs)
+    integ = np.trapz(real_product, x=steps)
+    return integ
+
+
+### Time domain likelihoods ####
+    
+def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
+    
+    # assuming evenly sampled times, same for all pulsars
+    times = self._times[0]
+    model_hplus, model_hcross = model_func(times, *model_args, **model_kwargs)
+    responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
+    Fplus = np.expand_dims(responses[:, 0], -1)
+    Fcross = np.expand_dims(responses[:, 1], -1)
+    model = Fplus * model_hplus + Fcross * model_hcross
+
+    # take inner product of residuals - model with itself
+    x = self.residuals - model
+    product = inner_product(x, x, self._inv_cov_residuals, times)
+    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+    return -0.5 * product #- norm
+
+def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
+    
+    # convert residuals data to null streams
+    pulsar_array = self._pulsars[['theta', 'phi']].values
+    ns_data, ns_inv_cov = null_streams(self.residuals, self._inv_cov_residuals, 
+                                    source, pulsar_array)
+    
+    # assuming evenly sampled times, same for all pulsars
+    times = self._times[0]
+    model_hplus, model_hcross = model_func(times, *model_args, **model_kwargs)
+    
+    # combine hplus, hcross with null streams to get full model
+    nulls = (np.zeros_like(model_hplus),)*(self._n_pulsars-2)
+    ns_model = np.hstack((model_hplus, model_hcross, *nulls)).reshape(
+                                       self._n_pulsars, len(model_hplus))
+
+    # take inner product of "null-streamed" residuals - model
+    # and use null-stream version of inverse covariance in inner product
+    x = ns_data - ns_model
+    product = inner_product(x, x, ns_inv_cov, times)
+    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+    return -0.5 * product #- norm
+
+
+### Fourier domain likelihoods ###
+
+def FD_inner_product(self, a, b, inv_cov, freqs):
+    """
+    noise-weighted inner product over frequency-domain quantities a and b.
+    """
+    # inner product per frequency
+    product = np.einsum('i...,ik,k...', np.conj(a), inv_cov, b)
+    real_product = 4 * np.real(product)
+    # integrate over the frequencies
+    freq_int = np.trapz(real_product, x=self._freqs)
+    return freq_int
+
+
+def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
+    """
+    Log likelihood in the Frequency Domain (without null streams)
+    """  
+    # call model function with args and preset model times, then funky fourier
+    fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
+                                                *model_args, **model_kwargs)
+    
+    # apply PTA responses to model hplus, hcross
+    responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
+    Fplus = np.expand_dims(responses[:, 0], -1)
+    Fcross = np.expand_dims(responses[:, 1], -1)
+    model = Fplus * fourier_hplus + Fcross * fourier_hcross
+    
+    # take inner product of x = (residuals - model) with itself
+    x = self.residualsFD - model
+    product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
+    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+    return -0.5 * product #- norm
+
+
+def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
+    """
+    Log likelihood in the Frequency Domain with null streams.
+    """
+    # convert residuals data to null streams
+    pulsar_array = self._pulsars[['theta', 'phi']].values
+    ns_data, ns_inv_cov = null_streams(self.residualsFD, self._inv_cov_residuals, 
+                                    source, pulsar_array)
+    
+    # call model function with args and preset model times, then funky fourier
+    fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
+                                            *model_args, **model_kwargs)
+    
+    # combine hplus, hcross with null streams to get full model
+    nulls = (np.zeros_like(fourier_hplus),)*(self._n_pulsars-2)
+    ns_model = np.hstack((fourier_hplus, fourier_hcross, *nulls)).reshape(
+                                       self._n_pulsars, len(fourier_hplus))
+    
+    # take inner product of x = (residuals - model) with itself
+    x = ns_data - ns_model
+    product = inner_product(x, x, ns_inv_cov, self._freqs)
+    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(ns_inv_cov))
+    return -0.5 * product #- norm
+
+
+
+
+
+functions = [log_likelihood_TD, log_likelihood_TD_ns, 
+             log_likelihood_FD, log_likelihood_FD_ns]
