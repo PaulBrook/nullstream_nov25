@@ -1,6 +1,5 @@
 # ptacake: Pulsar Timing Arrays - Correlations Are KEy
-package for simulating realistically sampled (uneven sampling, different per pulsar, gaps, ...) PTA data and analysis based on null streams or on spherical harmonics.
-[paper references?]
+Python package for PTA data analysis based on correlations between the pulsars: nullstreams and spherical harmonics (paper references?). The package also includes tools to simulate PTA data with realistic sampling (uneven time stamps, different TOAs for each pulsar, gaps, ...).
 
 # build
 The package is made based on instructions from https://dzone.com/articles/executable-package-pip-install
@@ -22,5 +21,5 @@ Run unittests from the git repository with:
 ```bash
 python3 -m unittest discover tests
 ```
-Note that at least one test fails with python2 (due to a change with using * to unpack stuff). New test modules should follow the naming convention 'test_<something_descriptive>.py`.
+Note that at least one test fails with python2 (due to a change with using * to unpack stuff). New test modules should follow the naming convention `test_<something_descriptive>.py`.
 
