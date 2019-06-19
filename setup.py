@@ -1,4 +1,5 @@
 # instructions from here https://dzone.com/articles/executable-package-pip-install
+# and https://python-packaging.readthedocs.io/en/latest/minimal.html
 import setuptools
 
 with open('README.md', 'r') as fh:
@@ -15,11 +16,13 @@ setuptools.setup(
             long_description=long_description,
             long_description_content_type='text/markdown',
             url='https://github.com/cjm96/NullStreams',
-            packages=setuptools.find_packages(),
+            packages=['ptacake'],
+            #packages=setuptools.find_packages(),
             # we should add a license and add it to classifiers as
             # "License :: OSI Approved :: MIT License" for example
             classifiers=[
                 "Programming Language :: Python :: 3",
                 "Operating System :: OS Independent",
                 ],
+            zipsafe=False
             )

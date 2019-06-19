@@ -1,20 +1,17 @@
 # ptacake: Pulsar Timing Arrays - Correlations Are KEy
 Python package for PTA data analysis based on correlations between the pulsars: nullstreams and spherical harmonics (paper references?). The package also includes tools to simulate PTA data with realistic sampling (uneven time stamps, different TOAs for each pulsar, gaps, ...).
 
-# build
-The package is made based on instructions from https://dzone.com/articles/executable-package-pip-install
-But I added some stuff after reading https://packaging.python.org/tutorials/packaging-projects/ since we have a full python package to install, not just one executable.
-After cloning the repository, go the repository directory, then build with:
-```bash
-python3 setup.py sdist bdist_wheel
-```
+# install locally
+Some references used to build this pacakge:
+https://python-packaging.readthedocs.io/en/latest/minimal.html,
+https://dzone.com/articles/executable-package-pip-install,
+https://packaging.python.org/tutorials/packaging-projects
 
-# install
-After building, you can pip install the package locally. Go to the git repository, then run:
+For now, you can install the package locally. Go to the git repository, then run:
 ```bash
-python3 -m pip install dist/ptacake<stuff>.whl
+pip install .
 ```
-where the file with `<stuff>` in the name gets made automatically after the build; there should only be one .whl file to install.
+Add the option -e if you want the install to be affected by changes you make to the source code (so for development). 
 
 # testing
 Run unittests from the git repository with:

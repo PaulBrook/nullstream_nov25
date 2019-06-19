@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Fri May  3 15:24:19 2019
 
@@ -23,8 +21,7 @@ except:
 from .nullstream_algebra import null_streams, response_matrix
 from . import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
-from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, 
-               _PTA_sim_injections, _PTA_sim_likelihood)
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
 
 # add methods from other modules to the main class
@@ -115,9 +112,6 @@ class PTA_sim:
 #        #return l * 2.0*np.pi
 #        return logl
 
-
-if __name__ == '__main__':
-    pass
     
     
     
