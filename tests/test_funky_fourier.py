@@ -29,9 +29,8 @@ class Test_funky_fourier(unittest.TestCase):
         fft_residuals = np.fft.rfft(sim.residuals) * Dt
         
         ## Funky fourier with the same frequencies
-        # hack build-in to setup_TOAs_fourier to manually pick the frequencies
-        sim._setup_TOAs_fourier(overwrite_frequencies=fft_freqs)
-        sim.fourier_residuals()
+        # use overwrite_freqs to choose the same frequencies as the fft
+        sim.fourier_residuals(overwrite_freqs=fft_freqs)
         funky_residuals = sim.residualsFD
 
 

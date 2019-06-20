@@ -32,7 +32,7 @@ def _weights_matrix(self, times, freqs):
     mat = weights * np.exp(-2*np.pi*(1j)*expanded_freqs*times)
     return weights, mat
 
-def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_frequencies=None):
+def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
     """
     Set up for the funky fourier on the TOA residuals with unevenly sampled times.
     
@@ -44,11 +44,11 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_frequencies=None):
     Then the fourier matrix is m_jk = w(t_j) * exp(-2*pi*i*f_k*t_j), with j 
     TOAs and k frequencies.
     
-    Use overwrite_frequencies = np.array to manually choose an array of
+    Use overwrite_freqs = np.array to manually choose an array of
     frequencies instead (no guarantee they make sense)
     """
-    if overwrite_frequencies is not None:
-        self._freqs = overwrite_frequencies
+    if overwrite_freqs is not None:
+        self._freqs = overwrite_freqs
     else:
         # set minimum frequency based on longest time span between any TOAs
         # with alpha some integer constant of order 1 or experiment with higher alpha
@@ -80,7 +80,8 @@ def _setup_model_fourier(self):
     Set up for the funky fourier on the model, with same frequencies as the TOA residuals.
     """
     # we need the frequencies from the TOA residuals fourier setup
-    if not self._TOA_fourier_ready:
+    # they get initiated as 0, so check for that
+    if self._freqs == 0:
         self._setup_TOAs_fourier()
         
     # pick a set of times to sample the model at. 
@@ -100,16 +101,21 @@ def _setup_model_fourier(self):
     
     self._model_fourier_ready = True
 
-def fourier_residuals(self):
+ # to do overwrite_frequencies
+def fourier_residuals(self, overwrite_freqs=None):
     """
     Compute the Fourier domain signal and noise.
     
-    If you want to use custom frequency, run _setup_TOAs_fourier with
-    overwrite_frequencies prior to this function.
+    Use overwrite_freqs = np.array to manually choose an array of
+    frequencies (without guarantee they make sense). Per default the frequencies
+    are chosen automatically based on the total time of the observation and 
+    a reasonable maximum frequency.
     """
-    if not self._TOA_fourier_ready:
-        print("First time fourier of TOAs, setting up...")
-        self._setup_TOAs_fourier()
+    # we perhaps do not need to set up every time, as long as the choice of 
+    # frequencies and the time stamps of the residuals stay the same
+    # but we don't expect to run this very often (just once to get the FD 
+    # residuals ready). TL;DR just set up every time so it always works.
+    self._setup_TOAs_fourier(overwrite_freqs=overwrite_freqs)
 
     for i in range(self._n_pulsars):
         
@@ -129,7 +135,7 @@ def fourier_model(self, model, *args, **kwargs):
     Get funky fourier of the model (at previously set times).
     
     If you want to use custom frequency, run _setup_TOAs_fourier with
-    overwrite_frequencies prior to this function.
+    overwrite_freqs prior to this function.
     
     Parameters
     ----------

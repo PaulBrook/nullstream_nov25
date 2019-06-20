@@ -58,6 +58,7 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
     else:
         # draw randomly from weighted set of healpix pixels (see Roebber 2019)
+        # FIXME find this file with relative path from the package or something?
         weights = np.loadtxt('msp_weight_map.dat')
         npix = np.size(weights)
         nside = hp.npix2nside(npix)

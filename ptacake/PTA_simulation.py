@@ -39,7 +39,6 @@ class PTA_sim:
         self._noise = 0
         
         # fourier stuff
-        self._TOA_fourier_ready = False
         self._model_fourier_ready = False
         self._signalFD = 0
         self._noiseFD = 0

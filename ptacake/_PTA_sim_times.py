@@ -46,8 +46,7 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
 
     # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
-    # need to redo fourier setup after times changed
-    self._TOA_fourier_ready
+    
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                       min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
@@ -139,8 +138,6 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
 
     # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
-    # need to redo fourier setup after times changed
-    self._TOA_fourier_ready = False
 
 
 def times_from_tim_file(self, filepath):
@@ -152,7 +149,5 @@ def times_from_tim_file(self, filepath):
 
 #    # st residuals to zero and correct shape for times
 #    self._initiate_zero_residuals()
-#    # need to redo fourier setup after times changed
-#    self._TOA_fourier_ready
 
 functions = [_initiate_zero_residuals, evenly_sampled_times, randomized_times]

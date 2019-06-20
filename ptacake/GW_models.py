@@ -36,7 +36,7 @@ def rotate_wave(Ap, Ac, psi):
     return Ap_out, Ac_out
 
 
-def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
+def sinusoid_TD(times, phase, amp, pol, cosi, GW_freq, integrate=True):
     """
     Produce the GW polarisations time series according to a sinusoid model
     
@@ -45,7 +45,7 @@ def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     hplus = amp 1/2 (1+cos(i)^2) cos(omega t - phase)
     hcross = amp cos(i) sin(omega t - phase)
     with amp the overall amplitude (depending on the chirp mass for a BBH), 
-    i the inclination, omega the angular GW frequency (= 2 x orbital)
+    i the inclination, omega the GW frequency (= 2 x orbital)
     and phase the phase offset
     
     Parameters
@@ -61,8 +61,8 @@ def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     cosi: float
         cosine of the inclination, between 0 and 1
         using the cosine sice it has a flat prior
-    GW_ang_freq: float
-        angular frequency of the GW signal in rad/s
+    GW_freq: float
+        frequency of the GW signal in Hz
         (this is twice the orbital frequency)
     integrate: bool
         default: True
@@ -78,6 +78,7 @@ def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     """ 
     Aplus = amp * 0.5 * (1.0 + cosi**2.0) 
     Across = amp * cosi
+    GW_ang_freq = 2*np.pi*GW_freq
     
     if integrate:
         hplus = (Aplus / GW_ang_freq) * np.sin(GW_ang_freq * times + phase)
@@ -90,7 +91,7 @@ def sinusoid_TD(times, phase, amp, pol, cosi, GW_ang_freq, integrate=True):
     hplus, hcross = rotate_wave(hplus, hcross, pol)
     return hplus, hcross
     
-def sinusoid_TD_zerophase(times, amp, pol, cosi, GW_ang_freq):
+def sinusoid_TD_zerophase(times, amp, pol, cosi, GW_freq):
     """
     Simple sinusoid model for GW binary residuals in frequency domain.
     
@@ -102,10 +103,10 @@ def sinusoid_TD_zerophase(times, amp, pol, cosi, GW_ang_freq):
     ---------
     see sinusoid_FD (apart from phase which is set to zero)
     """
-    return sinusoid_TD(times, 0.0, amp, pol, cosi, GW_ang_freq, integrate=True)
+    return sinusoid_TD(times, 0.0, amp, pol, cosi, GW_freq, integrate=True)
 
 
-def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
+def sinusoid_FD(phase, amp, pol, cosi, GW_freq, Tobs, residuals=True):
     """
     Simple sinusoid model for a GW binary in frequency domain.
     
@@ -123,8 +124,8 @@ def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
     cosi: float
         cosine of the inclination, between 0 and 1
         using the cosine sice it has a flat prior
-    GW_ang_freq: float
-        angular frequency of the GW signal in rad/s
+    GW_freq: float
+        frequency of the GW signal in rad/s
         (this is twice the orbital frequency)
     Tobs: float
         duration of the GW model in the time domain, in seconds
@@ -142,6 +143,7 @@ def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
     
     Aplus = amp * 0.5 * (1.0 + cosi**2.0)
     Across = amp * cosi
+    GW_ang_freq = 2*np.pi*GW_freq
     
     # fourier transformed sinusoid signal
     # 1/Tobs is the frequency bin width
@@ -157,7 +159,7 @@ def sinusoid_FD(phase, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True):
     
     return hplus, hcross
 
-def sinusoid_FD_zerophase(amp, pol, cosi, GW_ang_freq, Tobs):
+def sinusoid_FD_zerophase(amp, pol, cosi, GW_freq, Tobs):
     """
     Simple sinusoid model for GW binary residuals in frequency domain.
     
@@ -169,5 +171,5 @@ def sinusoid_FD_zerophase(amp, pol, cosi, GW_ang_freq, Tobs):
     ---------
     see sinusoid_FD (apart from phase which is set to zero)
     """
-    return sinusoid_FD(0.0, amp, pol, cosi, GW_ang_freq, Tobs, residuals=True)
+    return sinusoid_FD(0.0, amp, pol, cosi, GW_freq, Tobs, residuals=True)
 
