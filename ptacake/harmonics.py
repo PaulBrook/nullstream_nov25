@@ -28,6 +28,39 @@ def gw_Cl(norm=6*np.pi, lmax=100, df=False):
     return Cl
 
 
+# FIXME: generalize w/rotations
+# If injected in a very narrow frequency bin, are bin effects negligeable?
+def single_src_alm(lmax=10, plus=1, cross=1):
+    """
+    Theoretical full alms for a complex redshift map produced by a source
+    situatated at the north pole. 'plus' is the relative amplitude of h+,
+    'cross' is the relative amplitude of hx
+    """
+
+    l = np.arange(lmax + 1)
+    l_prefactor = np.pi*(2*l + 1)/(l + 2)/(l + 1)/l/(l - 1)
+    l_prefactor[:2] = 0
+
+    h_mpos = plus + 1j*cross
+    h_mneg = plus - 1j*cross
+    lidx, midx = hp.Alm.getlm(lmax)
+
+    almpos = pd.DataFrame(np.sqrt(l_prefactor)*h_mpos,
+                          index=pd.MultiIndex.from_product([l, [2]]))
+    almpos = almpos.reindex(pd.MultiIndex.from_arrays([lidx, midx]),
+                            fill_value=0j)
+    almneg = pd.DataFrame(np.sqrt(l_prefactor)*h_mneg,
+                          index=pd.MultiIndex.from_product([l, [-2]]))
+    almneg = almneg.reindex(pd.MultiIndex.from_arrays([lidx, -midx]),
+                            fill_value=0j)
+
+    alm = almpos.add(almneg, fill_value=0)
+    alm.index.names = ['l', 'm']
+    alm.columns = ['alm']
+
+    return alm
+
+
 def cmplx_map_2_full_alm(residuals, lmax):
     """
     Get the full set of alm for a complex healpix map. NaN will be treated as
