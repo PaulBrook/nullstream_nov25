@@ -35,7 +35,10 @@ class Test_data_vs_model(unittest.TestCase):
         
     def test_TD_data_vs_model(self):
         
-        TD_model_hplus, TD_model_hcross = sinusoid_TD(self.sim._times, *self.sinusoid_args)
+        # change the phase a little bit
+        test_args = self.sinusoid_args.copy()
+        #test_args[0] = 0.123 + 1.3*np.pi
+        TD_model_hplus, TD_model_hcross = sinusoid_TD(self.sim._times, *test_args)
         
         responses = response_matrix(*self.source, self.sim._pulsars[['theta', 'phi']].values)
         Fplus = np.expand_dims(responses[:, 0], -1)
@@ -44,17 +47,19 @@ class Test_data_vs_model(unittest.TestCase):
         
         n = self.sim._n_pulsars
         
-        for j in range(n):
-            npt.assert_allclose(self.sim.residuals[j], model[j])
-        
         if self.plotting:
             fig, axes = plt.subplots(n, figsize=(10, 16))
             for i in range(n):
                 ax = axes[i]
                 ax.plot(self.sim._times[i], self.sim.residuals[i], c='b', label='residuals')
                 ax.plot(self.sim._times[i], model[i], c='r', linestyle='--', label='model')
+                ax.plot(self.sim._times[i], (self.sim.residuals[i] - model[i]), c='k', alpha=0.5, label='difference')
                 ax.legend(loc='best')
             fig.savefig('./TD_residuals_vs_model.pdf')
+        
+        else:
+            for j in range(n):
+                npt.assert_allclose(self.sim.residuals[j], model[j])
     
     def test_FD_data_vs_model(self, decimal_prec=4):
         
@@ -64,7 +69,10 @@ class Test_data_vs_model(unittest.TestCase):
         # use default frequencies (in-built selection)
         self.sim.fourier_residuals()
         
-        FD_model_hplus, FD_model_hcross = self.sim.fourier_model(sinusoid_TD, *self.sinusoid_args)
+        # change the phase a little bit
+        test_args = self.sinusoid_args.copy()
+        #test_args[0] = 0.123 + 1.3*np.pi/1
+        FD_model_hplus, FD_model_hcross = self.sim.fourier_model(sinusoid_TD, *test_args)
         
         # apply PTA responses to model hplus, hcross
         responses = response_matrix(*self.source, self.sim._pulsars[['theta', 'phi']].values)
@@ -73,10 +81,6 @@ class Test_data_vs_model(unittest.TestCase):
         model = Fplus * FD_model_hplus + Fcross * FD_model_hcross
         
         n = self.sim._n_pulsars
-        for j in range(n):
-            # this is not a super high accuracy test (with decimal=4), but with higher
-            # we get failure, so maybe there's some numerical imprecision going on here
-            npt.assert_almost_equal(self.sim.residualsFD[j], model[j], decimal=decimal_prec)
         
         if self.plotting:
             fig, axes = plt.subplots(n, figsize=(10, 16))
@@ -84,8 +88,14 @@ class Test_data_vs_model(unittest.TestCase):
                 ax = axes[i]
                 ax.plot(self.sim._freqs, abs(self.sim.residualsFD[i]), c='b', label='residuals')
                 ax.plot(self.sim._freqs, abs(model[i]), c='r', linestyle='--', label='model')
+                ax.plot(self.sim._freqs, abs(self.sim.residualsFD[i] - model[i]), c='k', alpha=0.5, label='difference')
                 ax.legend(loc='best')
             fig.savefig('./FD_residuals_vs_model.pdf')
+        else:
+            for j in range(n):
+                # this is not a super high accuracy test (with decimal=4), but with higher
+                # we get failure, so maybe there's some numerical imprecision going on here
+                npt.assert_almost_equal(self.sim.residualsFD[j], model[j], decimal=decimal_prec)
     
     # we do the same test again, but with higher numerical precision, which 
     # we expect to fail

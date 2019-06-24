@@ -47,6 +47,11 @@ def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
 
 class Test_likelihood(unittest.TestCase):
     
+    ### Set plotting to True here if you want this unit test to make plots
+    def __init__(self, *args, **kwargs):
+        super(Test_likelihood, self).__init__(*args, **kwargs)
+        self.plotting = False
+    
     @classmethod
     def setUpClass(cls):
         cls.sim = setup_evenly_sampled(n_pulsars=5, seed=1234567)
@@ -57,6 +62,7 @@ class Test_likelihood(unittest.TestCase):
         # choose source (theta, phi) coordinates
         source = (0.8*np.pi, 1.3*np.pi)
         cls.sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+        cls.sim.fourier_residuals()
     
     def test_TD_nullstreams(self):
         """
@@ -104,10 +110,11 @@ class Test_likelihood(unittest.TestCase):
         # FD likelihood
         FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
         
-        print('TD log like: {}, FD log like: {}'.format(TD_ll, FD_ll))
-        #npt.assert_almost_equal(TD_ll, FD_ll) # this fails
+        if not self.plotting:
+            print('TD log like: {}, FD log like: {}'.format(TD_ll, FD_ll))
+            #npt.assert_almost_equal(TD_ll, FD_ll) # this fails
+            return
         
-        ### since this fails, let's check the shape of the likelihood vs some parameters
         standard_args = [0.123, 1e-16, np.pi/7, 0.5, 2e-8]
         
         # vary phase

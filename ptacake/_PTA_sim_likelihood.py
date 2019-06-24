@@ -68,18 +68,6 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
 
 ### Fourier domain likelihoods ###
 
-def FD_inner_product(self, a, b, inv_cov, freqs):
-    """
-    noise-weighted inner product over frequency-domain quantities a and b.
-    """
-    # inner product per frequency
-    product = np.einsum('i...,ik,k...', np.conj(a), inv_cov, b)
-    real_product = 4 * np.real(product)
-    # integrate over the frequencies
-    freq_int = np.trapz(real_product, x=self._freqs)
-    return freq_int
-
-
 def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     """
     Log likelihood in the Frequency Domain (without null streams)
