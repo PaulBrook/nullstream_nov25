@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Mon May 20 17:22:15 2019
 
@@ -75,18 +73,20 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
     # we have everything set up to fourier the TOA residuals now
     self._TOA_fourier_ready = True
     
-def _setup_model_fourier(self):
+def _setup_model_fourier(self, oversample=10):
     """
     Set up for the funky fourier on the model, with same frequencies as the TOA residuals.
     """
     # we need the frequencies from the TOA residuals fourier setup
-    # they get initiated as 0, so check for that
-    if self._freqs == 0:
+    # they get initiated as None, so check for that
+    if self._freqs is None:
         self._setup_TOAs_fourier()
         
     # pick a set of times to sample the model at. 
     # The maximum frequency gives us a cadence
     step = 1 / (2 * np.max(self._freqs))
+    # we then oversample by some factor
+    step = step / oversample
     # start before the first TOA and end after the last
     t_min = np.nanmin(self._times) - step
     t_max = np.nanmax(self._times) + step
