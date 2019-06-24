@@ -42,7 +42,7 @@ class PTA_sim:
         self._model_fourier_ready = False
         self._signalFD = 0
         self._noiseFD = 0
-        self._freqs = 0
+        self._freqs = None
         self._TOA_weights = []
         self._TOA_fourier_mats = []
         self._model_weights = []
