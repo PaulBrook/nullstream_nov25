@@ -11,6 +11,7 @@ functions to go in the main PTA_sim class that have to do with picking/setting t
 import numpy as np
 import numpy.random as rd
 import healpy as hp
+import matplotlib.pyplot as plt
 
 try:
     from jannasutils import radec_location_to_ang
@@ -147,6 +148,7 @@ def plot_pulsar_map(self):
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+    return plt.gcf()
 
 
 # functions we want to add as methods to the main PTA_sim class

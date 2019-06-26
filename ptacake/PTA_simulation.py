@@ -5,9 +5,8 @@ Created on Fri May  3 15:24:19 2019
 """
 
 import numpy as np
-import numpy.random as rd
 import pandas as pd
-from scipy.special import i0e
+#from scipy.special import i0e
 #import healpy as hp
 #import matplotlib.pyplot as plt
 
