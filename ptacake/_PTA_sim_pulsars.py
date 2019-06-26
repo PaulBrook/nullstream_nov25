@@ -12,6 +12,14 @@ import numpy as np
 import numpy.random as rd
 import healpy as hp
 
+# for reading in package data
+try:
+    # Python 3.7+
+    import importlib.resources as import_resources
+except ImportError:
+    # Backported version in Python < 3.7
+    import importlib_resources as import_resources
+
 try:
     from jannasutils import radec_location_to_ang
 except:
@@ -59,7 +67,9 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     else:
         # draw randomly from weighted set of healpix pixels (see Roebber 2019)
         # FIXME find this file with relative path from the package or something?
-        weights = np.loadtxt('msp_weight_map.dat')
+        #weights = np.loadtxt('msp_weight_map.dat')
+        with import_resources.path('ptacake', 'msp_weight_map.dat') as f:
+            weights = np.loadtxt(f)
         npix = np.size(weights)
         nside = hp.npix2nside(npix)
         pix = np.random.choice(npix, n, replace=False, p=weights)
