@@ -55,7 +55,7 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
         ## make a test sinusoidal signal
         from ptacake.GW_models import sinusoid_TD
         # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
-        sinusoid_args = [0.123, 1e-16, np.pi/7, 0.5, 2e-8]
+        sinusoid_args = [0.123, 1e-14, np.pi/7, 0.5, 2e-8]
         # choose source (theta, phi) coordinates
         source = (0.8*np.pi, 1.3*np.pi)
         sim.inject_signal(sinusoid_TD, source, *sinusoid_args)

@@ -20,7 +20,7 @@ class Test_data_vs_model(unittest.TestCase):
     ### Set plotting to True here if you want this unit test to make plots
     def __init__(self, *args, **kwargs):
         super(Test_data_vs_model, self).__init__(*args, **kwargs)
-        self.plotting = False
+        self.plotting = True
         
     @classmethod
     def setUpClass(cls):
@@ -28,7 +28,7 @@ class Test_data_vs_model(unittest.TestCase):
         
         # make a sinusoidal signal
         # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
-        cls.sinusoid_args = [0.123, 1e-16, np.pi/7, 0.5, 2e-8]
+        cls.sinusoid_args = [0.123, 1e-14, np.pi/7, 0.5, 2e-8]
         # choose source (theta, phi) coordinates
         cls.source = (0.8*np.pi, 1.3*np.pi)
         cls.sim.inject_signal(sinusoid_TD, cls.source, *cls.sinusoid_args)
