@@ -71,6 +71,7 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
 def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     """
     Log likelihood in the Frequency Domain (without null streams)
+    Make sure you ran fourier_residuals beforehand!!!
     """  
     # call model function with args and preset model times, then funky fourier
     fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
@@ -85,6 +86,11 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     # take inner product of x = (residuals - model) with itself
     x = self.residualsFD - model
     product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
+    # FIXME We need a factor of 2 to make it consistent with the TD likelihood
+    # I don't know why (probably something to do with negative frequencies/ real
+    # and imaginary numbers). Possibly the inner product should be a factor 2 
+    # for TD instead of 4, and a factor 4 for FD
+    product *= 2
     #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
     return -0.5 * product #- norm
 
@@ -92,6 +98,7 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
 def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     """
     Log likelihood in the Frequency Domain with null streams.
+    Make sure you ran fourier_residuals beforehand!!!
     """
     # convert residuals data to null streams
     pulsar_array = self._pulsars[['theta', 'phi']].values
@@ -110,11 +117,10 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     # take inner product of x = (residuals - model) with itself
     x = ns_data - ns_model
     product = inner_product(x, x, ns_inv_cov, self._freqs)
+    # See log_likelihood_FD comment
+    product *= 2
     #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(ns_inv_cov))
     return -0.5 * product #- norm
-
-
-
 
 
 functions = [log_likelihood_TD, log_likelihood_TD_ns, 
