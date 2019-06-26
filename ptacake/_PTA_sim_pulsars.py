@@ -70,7 +70,7 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
 
     # save the inverse covariance matrix of the pulsar residuals (Time Domain)
-    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
+    self._inv_cov_residuals = np.diag(1/self._pulsars['rms']**2)
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     """
