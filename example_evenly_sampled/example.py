@@ -62,7 +62,8 @@ if __name__ == "__main__":
         for x in var_values:
             test_args = sinusoid_args.copy()
             test_args[var_indices[var]] = x
-            ll = sim.log_likelihood_FD_ns(source, sinusoid_TD, test_args)
+            #ll = sim.log_likelihood_FD_ns(source, sinusoid_TD, test_args)
+            ll = sim.log_likelihood_TD(source, sinusoid_TD, test_args)
             log_likes.append(ll)
         
         fig = plt.figure()

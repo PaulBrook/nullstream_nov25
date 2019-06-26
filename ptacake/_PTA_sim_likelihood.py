@@ -22,6 +22,7 @@ def inner_product(a, b, inv_cov, steps):
     # integrate over the steps (times or freqs)
     integ = np.trapz(real_product, x=steps)
     return integ
+    #return np.sum(product)
 
 
 ### Time domain likelihoods ####
@@ -38,9 +39,12 @@ def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
 
     # take inner product of residuals - model with itself
     x = self.residuals - model
-    product = inner_product(x, x, self._inv_cov_residuals, times)
-    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
-    return -0.5 * product #- norm
+    product = np.einsum('i...,ik,k...', x, self._inv_cov_residuals, x)
+    ll_no_norm = -0.5 * np.sum(product)
+    norm = -0.5 * len(times) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
+    ll = ll_no_norm #+ norm
+    
+    return ll
 
 def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
     
@@ -61,9 +65,12 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
     # take inner product of "null-streamed" residuals - model
     # and use null-stream version of inverse covariance in inner product
     x = ns_data - ns_model
-    product = inner_product(x, x, ns_inv_cov, times)
-    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
-    return -0.5 * product #- norm
+    product = np.einsum('i...,ik,k...', x, self._inv_cov_residuals, x)
+    ll_no_norm = -0.5 * np.sum(product)
+    norm = -0.5 * len(times) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
+    ll = ll_no_norm + norm
+    
+    return ll
 
 
 ### Fourier domain likelihoods ###
@@ -85,14 +92,27 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     
     # take inner product of x = (residuals - model) with itself
     x = self.residualsFD - model
-    product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
-    # FIXME We need a factor of 2 to make it consistent with the TD likelihood
-    # I don't know why (probably something to do with negative frequencies/ real
-    # and imaginary numbers). Possibly the inner product should be a factor 2 
-    # for TD instead of 4, and a factor 4 for FD
-    product *= 2
-    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
-    return -0.5 * product #- norm
+    
+    product = np.einsum('i...,ik,k...', np.conj(x), self._inv_cov_residuals, x)
+    ll_no_norm = -0.5 * np.sum(product)
+    norm = -0.5 * len(self._freqs) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
+    ll = ll_no_norm #+ norm
+    return ll
+    
+    # TODO do Parcival's theorem for unevenly sampled data and some random frequencies to
+    # find what DT equivalent should be
+    # lines below here work for evenly sampled data
+   # Dt = self._times[0][1] - self._times[0][0]
+   # return ll * (1 / Dt**2) / len(self._freqs)
+    
+#    product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
+#    # FIXME We need a factor of 2 to make it consistent with the TD likelihood
+#    # I don't know why (probably something to do with negative frequencies/ real
+#    # and imaginary numbers). Possibly the inner product should be a factor 2 
+#    # for TD instead of 4, and a factor 4 for FD
+#    product *= 2
+#    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
+#    return -0.5 * product #- norm
 
 
 def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
