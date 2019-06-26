@@ -167,14 +167,17 @@ def fourier_model(self, model, *args, **kwargs):
     return fourier_hplus, fourier_hcross
     
 
-def plot_residuals_FD(self):
+def plot_residuals_FD(self, draw_signal=True):
     """
     Plot times vs residuals for all pulsars
     """
     res = self.residualsFD
     fig, ax = plt.subplots(1)
     for i in range(self._n_pulsars):
-        ax.plot(np.log10(self._freqs), np.log10(abs(res[i])), ls='-', marker='.')
+        if draw_signal:
+            ax.plot(np.log10(self._freqs), np.log10(abs(self._signalFD[i])), linewidth=0.5, alpha=0.5, c='k')
+        
+        ax.plot(np.log10(self._freqs), np.log10(abs(res[i])), ls='none', marker='.')
     ax.set_xlabel('log_10( frequency (Hz) )')
     ax.set_ylabel('log_10( | residualsFD (s^2) | )')
     return fig

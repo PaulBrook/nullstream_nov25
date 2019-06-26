@@ -45,10 +45,10 @@ def plot_residuals(self, draw_signal=True):
     Plot times vs residuals for all pulsars
     """
     fig, ax = plt.subplots(1)
-    p = ax.plot(self._times.T, self.residuals.T, ls='-', marker='.')
     if draw_signal:
         # plot line through signal only, use the same colour as the corresponding residuals
-        ax.plot(self._times.T, self._signal.T, ls='-', linewidth=0.5, c=p[0].get_color())
+        ax.plot(self._times.T, self._signal.T, ls='-', linewidth=0.5, alpha=0.5, c='k')
+    ax.plot(self._times.T, self.residuals.T, ls='none', marker='.', markersize=2)
     ax.set_xlabel('time (s)')
     ax.set_ylabel('residuals (s)')
     return fig

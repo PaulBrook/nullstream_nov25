@@ -11,6 +11,7 @@ functions to go in the main PTA_sim class that have to do with picking/setting t
 import numpy as np
 import numpy.random as rd
 import healpy as hp
+import matplotlib.pyplot as plt
 
 # for reading in package data
 try:
@@ -79,7 +80,7 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
 
     # save the inverse covariance matrix of the pulsar residuals (Time Domain)
-    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
+    self._inv_cov_residuals = np.diag(1/self._pulsars['rms']**2)
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     """
@@ -157,6 +158,7 @@ def plot_pulsar_map(self):
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+    return plt.gcf()
 
 
 # functions we want to add as methods to the main PTA_sim class
