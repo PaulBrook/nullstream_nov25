@@ -17,6 +17,10 @@ setuptools.setup(
             long_description_content_type='text/markdown',
             url='https://github.com/cjm96/NullStreams',
             packages=['ptacake'],
+            package_data={'ptacake': ['ptacake/*.dat',
+                                      'ptacake/PTA_files/*.txt']},
+            install_requires=['numpy', 'pandas', 'healpy', 'matplotlib',
+                              "importlib_resources ; python_version<'3.7'"],
             #packages=setuptools.find_packages(),
             # we should add a license and add it to classifiers as
             # "License :: OSI Approved :: MIT License" for example
@@ -24,5 +28,5 @@ setuptools.setup(
                 "Programming Language :: Python :: 3",
                 "Operating System :: OS Independent",
                 ],
-            zipsafe=False
+            zipsafe=False # FIXME? not needed for importing package data
             )
