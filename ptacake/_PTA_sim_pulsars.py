@@ -151,13 +151,20 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
     self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 
-def plot_pulsar_map(self):
+def plot_pulsar_map(self, plot_point=None):
+    """
+    Plot map of the pulsars. Bigger pulsars have lower residuals rms.
+    Optional plot_point = (theta, phi) plots this points as a cross on the map.
+    """
     zero_map = np.zeros(hp.nside2npix(1))
     hp.mollview(zero_map, title='{} pulsar PTA'.format(len(self._pulsars)))
 
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+    if plot_point is not None    :
+        hp.projplot(*plot_point, marker='+', c='w', ms=10)
+    
     return plt.gcf()
 
 
