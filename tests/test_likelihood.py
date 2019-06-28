@@ -98,8 +98,8 @@ class Test_likelihood(unittest.TestCase):
         # same but likelihood but with null streams
         TD_ll_ns = self.sim.log_likelihood_TD_ns(source, sinusoid_TD, sinusoid_args_test)
         
-        print('TD log like: {}, TD log like w/ null streams: {}'.format(TD_ll, TD_ll_ns))
-        #npt.assert_almost_equal(TD_ll, TD_ll_ns, decimal=4)
+        #print('TD log like: {}, TD log like w/ null streams: {}'.format(TD_ll, TD_ll_ns))
+        npt.assert_almost_equal(TD_ll, TD_ll_ns, decimal=4)
         
         
     def test_FD_nullstreams(self):
@@ -131,8 +131,7 @@ class Test_likelihood(unittest.TestCase):
         source = (0.8*np.pi, 1.3*np.pi)
         standard_args = [0.123, 1e-14, np.pi/7, 0.5, 2e-8]
         
-        #if not self.plotting:
-        if True:
+        if not self.plotting:
             # run the actual test
             
             # case 1, injection parameters
@@ -157,8 +156,8 @@ class Test_likelihood(unittest.TestCase):
                 sinusoid_args_test3 = standard_args.copy()
                 # random phase
                 sinusoid_args_test3[0] = rd.random() * 2 * np.pi
-                # small offset to amplitude between -1e-15 and +1e-15
-                sinusoid_args_test3[1] += (rd.random() - 0.5) * 2e-15
+                # small offset to amplitude between -1e-17 and +1e-17
+                sinusoid_args_test3[1] += (rd.random() - 0.5) * 2e-17
                 # random polarization between 0 and pi
                 sinusoid_args_test3[2] = rd.random() * np.pi
                 # random cos(i) between -1 and 1
@@ -193,7 +192,7 @@ class Test_likelihood(unittest.TestCase):
         fig.savefig('./test_FD_TD_ll_phases.pdf')
         
         # vary amplitude
-        log10_amps = np.linspace(-16, -13.5, num=100)
+        log10_amps = np.linspace(-17, -15.5, num=100)
         amps = 10**log10_amps
         TD_ll_amps = []
         FD_ll_amps = []
@@ -237,10 +236,7 @@ class Test_likelihood(unittest.TestCase):
         Run the TD vs FD test again, but with high precision
         """
         # decimal = 7 is the default for npt.assert_almost_equal
-        if self.plotting:
-            assert(False)
-        else:
-            self.test_TD_FD(decimal=7)
+        self.test_TD_FD(decimal=7)
         
         
         

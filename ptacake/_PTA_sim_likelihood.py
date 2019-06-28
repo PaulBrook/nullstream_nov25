@@ -68,7 +68,7 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
     product = np.einsum('i...,ik,k...', x, self._inv_cov_residuals, x)
     ll_no_norm = -0.5 * np.sum(product)
     norm = -0.5 * len(times) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
-    ll = ll_no_norm #+ norm
+    ll = ll_no_norm + norm
     
     return ll
 
@@ -95,34 +95,15 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     
     product = np.einsum('i...,ik,k...', np.conj(x), self._inv_cov_residuals, x)
     ll_no_norm = -0.5 * np.sum(product)
-    # should already be real (since multiplying conj(x) and x)
-    assert(abs(np.imag(ll_no_norm)) < abs(np.real(ll_no_norm) / 10**12))
-    ll_no_norm = np.real(ll_no_norm)
-        
     norm = -0.5 * len(self._freqs) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
     ll = ll_no_norm #+ norm
+    return ll
     
     # TODO do Parcival's theorem for unevenly sampled data and some random frequencies to
     # find what DT equivalent should be
     # lines below here work for evenly sampled data
-    Dt = self._times[0][1] - self._times[0][0]
-    ll_even_sampling= ll / (Dt**2 * len(self._freqs))
-
-    # attempt at uneven sampled generalization of above: use mean of the weights instead of Dt
-    all_weights = np.concatenate(self._TOA_weights)
-    mean_weight = np.mean(all_weights)
-    
-    ll_use_mean_weight = ll / (mean_weight**2 * len(self._freqs))
-    
-    assert (ll_even_sampling == ll_use_mean_weight)
-
-    return ll_use_mean_weight
-    
-    #fourier_mat = self._TOA_fourier_mats[0]
-    #mat_product = np.dot(np.conj(fourier_mat.T), fourier_mat) 
-   # return ll / (np.trace(mat_product) * len(self._freqs))
-   
-   
+   # Dt = self._times[0][1] - self._times[0][0]
+   # return ll * (1 / Dt**2) / len(self._freqs)
     
 #    product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
 #    # FIXME We need a factor of 2 to make it consistent with the TD likelihood
