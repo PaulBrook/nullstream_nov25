@@ -79,8 +79,6 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     # normal distribution of rms values
     self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
 
-    # save the inverse covariance matrix of the pulsar residuals (Time Domain)
-    self._inv_cov_residuals = np.diag(1/self._pulsars['rms']**2)
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     """
@@ -111,8 +109,6 @@ def set_pulsars(self, pulsar_locations, rms, overwrite=False):
     self._pulsars['phi'] = pulsar_locations[:, 1]
     self._pulsars['rms'] = rms
 
-    # save the inverse covariance matrix of the pulsar residuals (Time Domain)
-    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
                       skip_lines=1, overwrite=False):
@@ -146,9 +142,6 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
 
     # get rms from column 4 and convert microseconds in PTA data to seconds
     self._pulsars['rms'] = 1.0e-6 * PTAdata[:, 4]
-
-    # save the inverse covariance matrix of the pulsar residuals
-    self._inv_cov_residuals = np.diag(1/self._pulsars['rms'])
 
 
 def plot_pulsar_map(self, plot_point=None):

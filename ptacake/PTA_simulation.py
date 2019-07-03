@@ -31,7 +31,7 @@ from ._PTA_sim_times import YEAR
                                       _PTA_sim_likelihood.functions)
 class PTA_sim:
     def __init__(self):
-        self._pulsars = pd.DataFrame(columns=['theta', 'phi', 'rms', 'nTOA'])
+        self._pulsars = pd.DataFrame(columns=['theta', 'phi', 'rms', 'nTOA', 'T'])
         self._n_pulsars = 0
         self._times = 0
         self._signal = 0

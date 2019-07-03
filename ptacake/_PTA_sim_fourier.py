@@ -59,9 +59,13 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
     self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
     self._noiseFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
     
-    # compute weights and fourier matrix per pulsar
+    # precomputables per pulsar: weights, fourier matrix, 
+    # fourier covariance matrix, inverse and determinant
     self._TOA_weights = []
     self._TOA_fourier_mats = []
+    self._TOA_FD_covs = []
+    self._TOA_FD_inv_covs = []
+    self._TOA_FD_cov_logdets = []
     for p in range(self._n_pulsars):
         
         # get times that aren't nan
@@ -69,6 +73,12 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         weights, mat = self._weights_matrix(irregular_times, self._freqs)
         self._TOA_weights.append(weights)
         self._TOA_fourier_mats.append(mat)
+        FD_cov = np.einsum('aj,jk,bk', mat, self._TD_covs[p], np.conj(mat))
+        self._TOA_FD_covs.append(FD_cov)
+        self._TOA_FD_inv_covs.append(np.linalg.inv(FD_cov))
+        sign, logdet = np.linalg.slogdet(FD_cov)
+        self._TOA_FD_cov_logdets.append(logdet)
+        
     
     # we have everything set up to fourier the TOA residuals now
     self._TOA_fourier_ready = True
