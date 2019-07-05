@@ -25,20 +25,23 @@ def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
     
     If realx is given, plot horizontal line as this x value.
     """
-    fig = plt.figure()
-    ax1 = fig.add_subplot(511)
+    fig = plt.figure(figsize=(5, 11))
+    ax1 = fig.add_subplot(611)
     if logx:
         ax1.set_xscale('log')
-    ax2 = fig.add_subplot(512, sharex=ax1)
-    ax3 = fig.add_subplot(513, sharex=ax1)
-    ax4 = fig.add_subplot(514, sharex=ax1)
-    ax5 = fig.add_subplot(515, sharex=ax1)
+    ax2 = fig.add_subplot(612, sharex=ax1)
+    ax3 = fig.add_subplot(613, sharex=ax1)
+    ax4 = fig.add_subplot(614, sharex=ax1)
+    ax5 = fig.add_subplot(615, sharex=ax1)
+    ax6 = fig.add_subplot(616, sharex=ax1)
         
     ax1.plot(x, ll1, c='b', label=label1)
     ax2.plot(x, ll2, c='r', label=label2)
-    ax3.plot(x, ll1/ll2, c='k', label='{}/{}'.format(label1, label2))
-    ax4.plot(x, ll1-ll2, c='purple', label='{} - {}'.format(label1, label2))
-    ax5.plot(x, (ll1-ll2)/ll1, c='g', label='({} - {})/{}'.format(label1, label2, label1))
+    ax3.plot(x, ll1, c='b', label=label1)
+    ax3.plot(x, ll2, c='r', linestyle='--', label=label2)
+    ax4.plot(x, ll1/ll2, c='k', label='{}/{}'.format(label1, label2))
+    ax5.plot(x, ll1-ll2, c='purple', label='{} - {}'.format(label1, label2))
+    ax6.plot(x, (ll1-ll2)/ll1, c='g', label='({} - {})/{}'.format(label1, label2, label1))
     
     axes = [ax1, ax2, ax3, ax4, ax5]
     if realx is not None:
@@ -51,6 +54,7 @@ def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
         ax.legend(loc='best')
     axes[-1].set_xlabel(xname)
     
+    fig.tight_layout()
     return fig
 
 class Test_likelihood(unittest.TestCase):
@@ -62,7 +66,16 @@ class Test_likelihood(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        cls.sim = setup_evenly_sampled(n_pulsars=5, seed=1234567)
+        #cls.sim = setup_evenly_sampled(n_pulsars=5, seed=1234567)
+        rd.seed(1234567)
+        cls.sim = PTA_sim()
+        cls.sim.random_pulsars(5, sig_rms=5e-8)
+        # bit of a long Dt and short time, so that we don't have too many points
+        # and tests run relatively quickly
+        Dt = 1.2e6
+        T = 7*YEAR
+        t_start = 0
+        cls.sim.evenly_sampled_times(cadence=Dt, T=T, t_start=t_start)
         
         # make a sinusoidal signal
         # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
@@ -70,9 +83,13 @@ class Test_likelihood(unittest.TestCase):
         # choose source (theta, phi) coordinates
         source = (0.8*np.pi, 1.3*np.pi)
         cls.sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
-        # for test purposes, use np fft frequencies
+        
+#        # for test purposes, use np fft frequencies
         freqs = np.fft.rfftfreq(len(cls.sim._times[0]), d=(cls.sim._times[0][1] - cls.sim._times[0][0]))
-        cls.sim.fourier_residuals(overwrite_freqs = freqs)
+#        cls.sim.fourier_residuals(overwrite_freqs = freqs)
+#       
+        # test with fft instead of matrix ft
+        cls.sim.fft_residuals()
         
         test_fig1 = cls.sim.plot_residuals()
         test_fig1.savefig('./TD_residuals.pdf')
@@ -102,20 +119,20 @@ class Test_likelihood(unittest.TestCase):
         #npt.assert_almost_equal(TD_ll, TD_ll_ns, decimal=4)
         
         
-    def test_FD_nullstreams(self):
-        """
-        Test that the FD likelihood on evenly sampled data is the same with
-        and without nullstream conversion.
-        """
-        # get likelihood for parameters close to injected parameters
-        source = (0.8*np.pi, 1.3*np.pi)
-        sinusoid_args_test = [0.11, 1e-14, np.pi/6.7, 0.513, 2e-8]
-        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
-        # same likelihood but with null streams
-        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test)
-        
-        print('FD log like: {}, FD log like w/ null streams: {}'.format(FD_ll, FD_ll_ns))
-        #npt.assert_almost_equal(FD_ll, FD_ll_ns)
+#    def test_FD_nullstreams(self):
+#        """
+#        Test that the FD likelihood on evenly sampled data is the same with
+#        and without nullstream conversion.
+#        """
+#        # get likelihood for parameters close to injected parameters
+#        source = (0.8*np.pi, 1.3*np.pi)
+#        sinusoid_args_test = [0.11, 1e-14, np.pi/6.7, 0.513, 2e-8]
+#        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
+#        # same likelihood but with null streams
+#        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test)
+#        
+#        print('FD log like: {}, FD log like w/ null streams: {}'.format(FD_ll, FD_ll_ns))
+#        #npt.assert_almost_equal(FD_ll, FD_ll_ns)
         
 
     def test_TD_FD(self, decimal=4):
@@ -172,7 +189,7 @@ class Test_likelihood(unittest.TestCase):
                 print('case 3, TD log like: {}, FD log like: {}'.format(TD_ll, FD_ll))
                 #npt.assert_almost_equal(TD_ll, FD_ll, decimal=decimal)
         
-            return # so that we don't need a looong else block
+                #return # so that we don't need a looong else block
         
         # vary phase
         phases = np.linspace(0, 2*np.pi, num=50)

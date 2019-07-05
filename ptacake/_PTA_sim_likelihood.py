@@ -7,7 +7,7 @@ import numpy as np
 
 from .nullstream_algebra import null_streams, response_matrix
 
-halflogpi = 0.5 * np.log(np.pi)
+hl2p = 0.5 * np.log(2*np.pi)
 
 
 ### Noise-weighted inner product (TD or FD) ### 
@@ -46,11 +46,13 @@ def log_likelihood_TD_es(self, source, model_func, model_args, **model_kwargs):
     x = self.residuals - model
     inv_cov = np.diag(self._pulsars['rms'].values**(-2))
     product = np.einsum('i...,ik,k...', x, inv_cov, x)
-    ll_no_norm = -0.5 * np.sum(product)
-    norm = -0.5 * len(times) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(inv_cov)))
+    ll_no_norm = -0.5 * np.sum(product) # sum over times
+    # use log(det(cov)) = -log(det(inv_cov))
+    sign, logdet = np.linalg.slogdet(inv_cov)
+    norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
     ll = ll_no_norm #+ norm
     
-    return ll
+    return ll#, norm
 
 def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
     """
@@ -83,18 +85,23 @@ def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
         logl += -0.5 * np.sum(product) # np.sum sums over times
         # use log(det(cov)) = -log(det(inv_cov))
         sign, logdet = np.linalg.slogdet(inv_cov)
-        norm += -num_times*halflogpi + 0.5*logdet
+        norm += -num_times*hl2p + 0.5*logdet
     
     ll = logl #+ norm
-    return ll
+    return ll#, norm
     
 
-def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
+def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):
+    """
+    Time domain null-stream likelihood only possible for evenly sampled times.
+    """
     
     # convert residuals data to null streams
+    # transform inverse covariance as well
     pulsar_array = self._pulsars[['theta', 'phi']].values
-    ns_data, ns_inv_cov = null_streams(self.residuals, self._inv_cov_residuals, 
-                                    source, pulsar_array)
+    inv_cov = np.diag(self._pulsars['rms'].values**(-2))
+    ns_data, ns_inv_cov = null_streams(self.residuals, inv_cov, 
+                                       source, pulsar_array)
     
     # assuming evenly sampled times, same for all pulsars
     times = self._times[0]
@@ -105,20 +112,21 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):#
     ns_model = np.hstack((model_hplus, model_hcross, *nulls)).reshape(
                                        self._n_pulsars, len(model_hplus))
 
-    # take inner product of "null-streamed" residuals - model
-    # and use null-stream version of inverse covariance in inner product
+    # take product of "null-streamed" residuals - model
     x = ns_data - ns_model
-    product = np.einsum('i...,ik,k...', x, self._inv_cov_residuals, x)
-    ll_no_norm = -0.5 * np.sum(product)
-    norm = -0.5 * len(times) * (self._n_pulsars * np.log(2 * np.pi) -np.log(np.linalg.det(self._inv_cov_residuals)))
+    product = np.einsum('i...,ik,k...', x, ns_inv_cov, x)
+    ll_no_norm = -0.5 * np.sum(product) # sum over times
+    # use log(det(cov)) = -log(det(inv_cov))
+    sign, logdet = np.linalg.slogdet(ns_inv_cov)
+    norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
     ll = ll_no_norm #+ norm
     
-    return ll
+    return ll#, norm
 
 
 ### Fourier domain likelihoods ###
 
-def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_FD_test(self, source, model_func, model_args, **model_kwargs):
     """
     Log likelihood in the Frequency Domain (without null streams)
     Make sure you ran fourier_residuals beforehand!!!
@@ -185,15 +193,35 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
    # return ll / (np.trace(mat_product) * len(self._freqs))
    
    
+def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
+    # call model function with args and preset model times, then funky fourier
+    fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
+                                                *model_args, **model_kwargs)
     
-#    product = inner_product(x, x, self._inv_cov_residuals, self._freqs)
-#    # FIXME We need a factor of 2 to make it consistent with the TD likelihood
-#    # I don't know why (probably something to do with negative frequencies/ real
-#    # and imaginary numbers). Possibly the inner product should be a factor 2 
-#    # for TD instead of 4, and a factor 4 for FD
-#    product *= 2
-#    #norm = self._n_pulsars * (2*np.pi) + np.log(1/np.linalg.det(self._inv_cov_residuals))
-#    return -0.5 * product #- norm
+    # apply response functions
+    responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
+    Fplus = np.expand_dims(responses[:, 0], -1)
+    Fcross = np.expand_dims(responses[:, 1], -1)
+    # Npulsars x Nfreqs
+    model = Fplus * fourier_hplus + Fcross * fourier_hcross
+    
+    # compute logl and norm by summing contributions per pulsar
+    logl = 0
+    norm = 0
+    
+    for p in range(self._n_pulsars):
+        # compute product of (res - model) * inv_covariance * (res - model)
+        x = self.residualsFD[p] - model[p]
+        inv_cov = self._TOA_FD_inv_covs[p]
+        product = np.einsum('a,ab,b', x, inv_cov, np.conj(x))
+        # should there be a times 2 here, to compensate for missing negative frequencies?
+        logl += -0.5 * 2 * np.real(np.sum(product)) # np.sum sums over frequencies
+        # use log(det(cov)) = -log(det(inv_cov))
+        sign, logdet = np.linalg.slogdet(inv_cov)
+        norm += -self._n_freqs*hl2p + 0.5*logdet
+    
+    ll = logl #+ norm
+    return ll#, norm
 
 
 def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
