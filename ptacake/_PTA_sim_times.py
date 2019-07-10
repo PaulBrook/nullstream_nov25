@@ -36,6 +36,13 @@ def _initiate_zero_residuals(self):
     self._signal[padding] = np.nan
     self._noise[padding] = np.nan
     
+    # save the TD covariance matrix diag(sigma**2), and inverse per pulsar
+    num_times = self._pulsars['nTOA'].values
+    sigma2 = (self._pulsars['rms'].values)**2
+    self._TD_covs = [sigma2[i] * np.eye(num_times[i]) for i in range(self._n_pulsars)]
+    self._TD_inv_covs = [np.linalg.inv(cov) for cov in self._TD_covs]
+    
+    
 def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     """
     Set the same evenly sampled times for all pulsars.
@@ -43,6 +50,9 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     times = np.arange(t_start, T, cadence)
     self._pulsars['nTOA'] = len(times)
     self._times = np.array((times,)*self._n_pulsars)
+        
+    # save time span for each pulsar
+    self._pulsars['T'] = np.nanmax(self._times, axis=1) - np.nanmin(self._times, axis=1)
 
     # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
@@ -92,8 +102,7 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     # of TOAs that will be randomized (so the exact start time depends on them).
     obs_time = t_end - t_start
     nTOAs = np.ceil(obs_time/ mean_cadence).astype(int)
-    self._pulsars['nTOA'] = nTOAs
-    max_nTOAs = np.max(nTOAs)
+    max_nTOAs = int(np.max(nTOAs))
 
     # draw cadences from a truncated gaussian distribution
     # make array rectangular by drawing the max number needed
@@ -135,6 +144,12 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                 times[psr, in_gap] = np.nan
 
     self._times = times
+    
+    # save time span for each pulsar
+    self._pulsars['T'] = np.nanmax(self._times, axis=1) - np.nanmin(self._times, axis=1)
+    
+    # save number of TOAs (not nan)
+    self._pulsars['nTOA'] = [np.sum(np.isfinite(t)) for t in self._times]
 
     # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()

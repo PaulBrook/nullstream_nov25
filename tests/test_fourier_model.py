@@ -20,10 +20,12 @@ class Test_data_vs_model(unittest.TestCase):
     ### Set plotting to True here if you want this unit test to make plots
     def __init__(self, *args, **kwargs):
         super(Test_data_vs_model, self).__init__(*args, **kwargs)
-        self.plotting = True
+        self.plotting = False
         
     @classmethod
     def setUpClass(cls):
+        print('Running Test_data_vs_model...')
+        
         cls.sim = setup_evenly_sampled(n_pulsars=5, seed=1234567)
         
         # make a sinusoidal signal
@@ -32,6 +34,16 @@ class Test_data_vs_model(unittest.TestCase):
         # choose source (theta, phi) coordinates
         cls.source = (0.8*np.pi, 1.3*np.pi)
         cls.sim.inject_signal(sinusoid_TD, cls.source, *cls.sinusoid_args)
+        
+#        # use default frequencies (in-built selection)
+#        self.sim.fourier_residuals()
+        # for testing purposes, use fft frequencies
+        dt = cls.sim._times[0][1] - cls.sim._times[0][0]
+        freqs = np.fft.rfftfreq(len(cls.sim._times[0]), d=dt)
+        cls.sim.fourier_residuals(overwrite_freqs = freqs)
+        
+        # also use the same times for residuals and model (so no oversampling)
+        cls.sim._setup_model_fourier(overwrite_times=cls.sim._times[0])
         
     def test_TD_data_vs_model(self):
         
@@ -65,9 +77,6 @@ class Test_data_vs_model(unittest.TestCase):
         
         # compare the fourier residuals (data) and the fourier model, if the model
         # is exactly the same as the injected signal. (no noise in the data)
-        
-        # use default frequencies (in-built selection)
-        self.sim.fourier_residuals()
         
         # change the phase a little bit
         test_args = self.sinusoid_args.copy()

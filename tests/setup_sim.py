@@ -43,8 +43,8 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
     sim = PTA_sim()
     sim.random_pulsars(n_pulsars, sig_rms=5e-8)
     
-    Dt = 1.2e6 # a bit less than 2 weeks
-    T = 20*YEAR
+    Dt = 2.0e6
+    T = 15*YEAR
     t_start = 0
     sim.evenly_sampled_times(cadence=Dt, T=T, t_start=t_start)
     

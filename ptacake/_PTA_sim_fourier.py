@@ -54,14 +54,19 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         fmin = 1 / (alpha * Tmax)
         # fmax chosen based on astrophysical prior, step same as fmin
         self._freqs = np.arange(fmin, fmax+fmin, step=fmin)
+    self._n_freqs = len(self._freqs)
     
     # create empty fourier domain signal and noise of the right shape
     self._signalFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
     self._noiseFD = np.zeros((self._n_pulsars, len(self._freqs)), dtype=np.complex_)
     
-    # compute weights and fourier matrix per pulsar
+    # precomputables per pulsar: weights, fourier matrix, 
+    # fourier covariance matrix, inverse and determinant
     self._TOA_weights = []
     self._TOA_fourier_mats = []
+    self._TOA_FD_covs = []
+    self._TOA_FD_inv_covs = []
+    self._TOA_FD_cov_logdets = []
     for p in range(self._n_pulsars):
         
         # get times that aren't nan
@@ -69,32 +74,44 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         weights, mat = self._weights_matrix(irregular_times, self._freqs)
         self._TOA_weights.append(weights)
         self._TOA_fourier_mats.append(mat)
+        FD_cov = np.einsum('aj,jk,bk', mat, self._TD_covs[p], np.conj(mat))
+        # enforce FD_cov is real and diagonal
+        FD_cov = np.diag(np.diag(np.real(FD_cov)))
+        self._TOA_FD_covs.append(FD_cov)
+        self._TOA_FD_inv_covs.append(np.linalg.inv(FD_cov))
+        sign, logdet = np.linalg.slogdet(FD_cov)
+        self._TOA_FD_cov_logdets.append(logdet)
+        
     
     # we have everything set up to fourier the TOA residuals now
     self._TOA_fourier_ready = True
     
-def _setup_model_fourier(self, oversample=10):
+def _setup_model_fourier(self, oversample=10, overwrite_times=None):
     """
     Set up for the funky fourier on the model, with same frequencies as the TOA residuals.
+    
+    Choose model times at oversampled (default = 10) Nyquist, evenly sampled times
+    (based on the maximum frequency). Or use overwrite_times to choose model times.
     """
     # we need the frequencies from the TOA residuals fourier setup
     # they get initiated as None, so check for that
     if self._freqs is None:
         self._setup_TOAs_fourier()
         
-    # pick a set of times to sample the model at. 
-    # The maximum frequency gives us a cadence
-    step = 1 / (2 * np.max(self._freqs))
-    # we then oversample by some factor
-    step = step / oversample
-    # start before the first TOA and end after the last
-    t_min = np.nanmin(self._times) - step
-    t_max = np.nanmax(self._times) + step
-    self._model_times = np.arange(t_min, t_max, step=step)
+    if overwrite_times is not None:
+        self._model_times = overwrite_times
+    else:
+        # pick a set of times to sample the model at. 
+        # The maximum frequency gives us a cadence
+        step = 1 / (2 * np.max(self._freqs))
+        # we then oversample by some factor
+        step = step / oversample
+        # start before the first TOA and end after the last
+        t_min = np.nanmin(self._times) - step
+        t_max = np.nanmax(self._times) + step
+        self._model_times = np.arange(t_min, t_max, step=step)
     
-#    ## TEST same model times as evenly sampled TOA times
-#    self._model_times = self._times[0]
-    
+    # precomputables: weights, fourier matrix
     weights, mat = self._weights_matrix(self._model_times, self._freqs)
     self._model_weights = weights
     self._model_fourier_mat = mat
@@ -129,6 +146,21 @@ def fourier_residuals(self, overwrite_freqs=None):
             irregularly_sampled_noise = self._noise[i][np.isfinite(self._times[i])]
             self._noiseFD[i] = np.dot(fourier_M, irregularly_sampled_noise)
     
+def fft_residuals(self):
+    """
+    Only use for evenly sample data!
+    """
+    ntimes = len(self._times[0])
+    dt = self._times[0][1] - self._times[0][0]
+    fft_freqs = np.fft.rfftfreq(ntimes, d=dt)
+    self._setup_TOAs_fourier(overwrite_freqs=fft_freqs)
+    
+    for i in range(self._n_pulsars):
+        
+        self._signalFD[i] = np.fft.rfft(self._signal[i]) * dt
+        
+        if np.shape(self._noise) is not ():
+            self._noiseFD[i] = np.fft.rfft(self._noise[i]) * dt
             
 def fourier_model(self, model, *args, **kwargs):
     """
@@ -159,8 +191,8 @@ def fourier_model(self, model, *args, **kwargs):
         hplus, hcross = model(self._model_times, *args, **kwargs)
     else:
         hplus, hcross = model
-    assert hplus.shape == self._model_times.shape
-    assert hcross.shape == self._model_times.shape
+        assert hplus.shape == self._model_times.shape
+        assert hcross.shape == self._model_times.shape
     
     fourier_hplus = np.dot(self._model_fourier_mat, hplus)
     fourier_hcross = np.dot(self._model_fourier_mat, hcross)
@@ -184,4 +216,4 @@ def plot_residuals_FD(self, draw_signal=True):
 
 
 functions = [_weights_matrix, _setup_TOAs_fourier, _setup_model_fourier, 
-             fourier_residuals, fourier_model, plot_residuals_FD]
+             fourier_residuals, fourier_model, plot_residuals_FD, fft_residuals]
