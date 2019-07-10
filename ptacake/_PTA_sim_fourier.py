@@ -75,6 +75,8 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         self._TOA_weights.append(weights)
         self._TOA_fourier_mats.append(mat)
         FD_cov = np.einsum('aj,jk,bk', mat, self._TD_covs[p], np.conj(mat))
+        # enforce FD_cov is real and diagonal
+        FD_cov = np.diag(np.diag(np.real(FD_cov)))
         self._TOA_FD_covs.append(FD_cov)
         self._TOA_FD_inv_covs.append(np.linalg.inv(FD_cov))
         sign, logdet = np.linalg.slogdet(FD_cov)
@@ -84,24 +86,30 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
     # we have everything set up to fourier the TOA residuals now
     self._TOA_fourier_ready = True
     
-def _setup_model_fourier(self, oversample=10):
+def _setup_model_fourier(self, oversample=10, overwrite_times=None):
     """
     Set up for the funky fourier on the model, with same frequencies as the TOA residuals.
+    
+    Choose model times at oversampled (default = 10) Nyquist, evenly sampled times
+    (based on the maximum frequency). Or use overwrite_times to choose model times.
     """
     # we need the frequencies from the TOA residuals fourier setup
     # they get initiated as None, so check for that
     if self._freqs is None:
         self._setup_TOAs_fourier()
         
-    # pick a set of times to sample the model at. 
-    # The maximum frequency gives us a cadence
-    step = 1 / (2 * np.max(self._freqs))
-    # we then oversample by some factor
-    step = step / oversample
-    # start before the first TOA and end after the last
-    t_min = np.nanmin(self._times) - step
-    t_max = np.nanmax(self._times) + step
-    self._model_times = np.arange(t_min, t_max, step=step)
+    if overwrite_times is not None:
+        self._model_times = overwrite_times
+    else:
+        # pick a set of times to sample the model at. 
+        # The maximum frequency gives us a cadence
+        step = 1 / (2 * np.max(self._freqs))
+        # we then oversample by some factor
+        step = step / oversample
+        # start before the first TOA and end after the last
+        t_min = np.nanmin(self._times) - step
+        t_max = np.nanmax(self._times) + step
+        self._model_times = np.arange(t_min, t_max, step=step)
     
     # precomputables: weights, fourier matrix
     weights, mat = self._weights_matrix(self._model_times, self._freqs)

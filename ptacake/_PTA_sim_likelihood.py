@@ -114,7 +114,9 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):
 
     # take product of "null-streamed" residuals - model
     x = ns_data - ns_model
+    
     product = np.einsum('i...,ik,k...', x, ns_inv_cov, x)
+    
     ll_no_norm = -0.5 * np.sum(product) # sum over times
     # use log(det(cov)) = -log(det(inv_cov))
     sign, logdet = np.linalg.slogdet(ns_inv_cov)
@@ -231,13 +233,13 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     """
     # convert residuals data to null streams
     pulsar_array = self._pulsars[['theta', 'phi']].values
-    ns_data, ns_inv_cov = null_streams(self.residualsFD, self._inv_cov_residuals, 
-                                    source, pulsar_array)
+    ns_data, ns_inv_cov = null_streams(self.residualsFD, self._TOA_FD_inv_covs, source, pulsar_array)
     
     # call model function with args and preset model times, then funky fourier
     fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
                                             *model_args, **model_kwargs)
     
+
     # combine hplus, hcross with null streams to get full model
     nulls = (np.zeros_like(fourier_hplus),)*(self._n_pulsars-2)
     ns_model = np.hstack((fourier_hplus, fourier_hcross, *nulls)).reshape(
