@@ -10,6 +10,9 @@ import numpy as np
 import pandas as pd
 import healpy as hp
 
+from scipy.special import sph_harm
+
+
 
 def gw_Cl(norm=6*np.pi, lmax=100, df=False):
     """
@@ -199,3 +202,77 @@ def syn_cmplx_map(Cls, nside=32, lmax=None):
     zmap = full_alm_2_cmplx_map(alm, nside=nside, lmax=lmax)
 
     return zmap
+
+
+def real_Ylm(l, m, theta, phi):
+    """
+    Return the real spherical harmonics
+    (standard astrophysics notation for l, m, theta, phi)
+    """
+
+    # 1 when m == 0; when m != 0, two terms are being combined
+    norm = np.where(m == 0, m + 1, np.sqrt(2) * (-1)**np.abs(m))
+
+    # complex Yl|m|
+    Y_c = sph_harm(np.abs(m), l, phi, theta)
+
+    # take real or imaginary part of Yl|m| depending on sign of m
+    Y_r = norm * np.where(m < 0, np.imag(Y_c), np.real(Y_c))
+
+    return Y_r
+
+
+def Kllmm(psr, lmax=2, weights=None, real=True):
+    """
+    Coupling matrix between two spherical harmonics for a set of pulsars psr.
+    Output is a (2*lmax + 1) x (2*lmax + 1) pandas dataframe showing the
+    overlap between all spherical harmonics with l <= lmax for the given
+    weighted pulsars.
+    """
+
+    if len(psr) < 2:
+        raise ValueError('Insufficient number of pulsars to calculate coupling')
+
+    # Build up lm dataframe
+    l_repeats = np.minimum(np.arange(1, 2*(lmax + 1), 2), 2*lmax + 1)
+    l_vals = np.repeat(np.arange(lmax + 1), l_repeats)
+    m_vals = [np.arange(-l, l + 1) for l in range(lmax+1)]
+    lm = pd.DataFrame({'m': np.concatenate(m_vals), 'l': l_vals, 'temp': 0})
+
+    # pulsar (pixel) dataframe with weights
+    pix = psr.copy()
+    pix.index.name='psr'
+    pix = pix.reset_index()
+    pix['temp'] = 0
+    if weights is not None:
+        pix['w'] = weights
+    else:
+        pix['w'] = 1
+
+    # get all combinations of lm, pix
+    lmi = pd.merge(lm, pix, on='temp').drop('temp', axis=1)
+
+    # spherical harmonics (function of l, m, pix)
+    if real:
+        # real spherical harmonic basis (useful b/c psr locations are real)
+        lmi['Ylm'] = real_Ylm(lmi['l'], lmi['m'], lmi['theta'], lmi['phi'])
+    else:
+        # standard complex spherical harmonic basis
+        lmi['Ylm'] = sph_harm(lmi['m'], lmi['l'], lmi['phi'], lmi['theta'])
+
+    lmi = lmi.drop(['phi', 'theta'], axis=1)
+
+    # get all combinations of different lm for each pixel
+    llmmi = pd.merge(lmi.drop('w', axis=1), lmi, how='outer', on='psr')
+    llmmi = llmmi.set_index(['l_x', 'm_x', 'l_y', 'm_y', 'psr'])
+
+    # take the weighted product of spherical harmonics
+    K = llmmi['w'] * llmmi['Ylm_x'] * np.conj(llmmi['Ylm_y'])
+
+    # integrate over pixels
+    norm = 4 * np.pi / pix['w'].sum()
+    K = norm * K.sum(level=['l_x', 'm_x', 'l_y', 'm_y'])
+
+    K = K.unstack(level=['l_y', 'm_y'])
+
+    return K

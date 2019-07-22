@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import healpy as hp
 
-# from .PTA_simulation import YEAR???
-YEAR = 3600*24*365.25
+from .PTA_simulation import YEAR
+#YEAR = 3600*24*365.25
 
 
 #from .harmonics import syn_cmplx_map, gw_Cl
