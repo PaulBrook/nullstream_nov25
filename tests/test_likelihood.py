@@ -252,7 +252,7 @@ class Test_likelihood(unittest.TestCase):
                 TD_ll = self.sim.log_likelihood_TD(source_test3, sinusoid_TD, sinusoid_args_test3)
                 FD_ll = self.sim.log_likelihood_FD(source_test3, sinusoid_TD, sinusoid_args_test3)
 
-                print('case 3, TD log like: {}, FD log like: {}'.format(TD_ll, FD_ll))
+                print('case3, TD log like: {:.6e}, FD log like: {:.6e}, diff {:.4e}'.format(TD_ll, FD_ll, TD_ll - FD_ll))
                 #npt.assert_almost_equal(TD_ll, FD_ll, decimal=decimal)
         
             return # so that we don't need a looong else block

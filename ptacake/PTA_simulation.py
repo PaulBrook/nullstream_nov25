@@ -20,14 +20,16 @@ except:
 from .nullstream_algebra import null_streams, response_matrix
 from . import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
-from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections, _PTA_sim_likelihood)
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, 
+               _PTA_sim_injections, _PTA_sim_nullstream, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
 
 # add methods from other modules to the main class
 @class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions + 
                                       _PTA_sim_times.functions + 
-                                      _PTA_sim_fourier.functions + 
                                       _PTA_sim_injections.functions + 
+                                      _PTA_sim_fourier.functions + 
+                                      _PTA_sim_nullstream.functions +
                                       _PTA_sim_likelihood.functions)
 class PTA_sim:
     def __init__(self):
@@ -46,6 +48,8 @@ class PTA_sim:
         self._TOA_fourier_mats = []
         self._model_weights = []
         self._model_fourier_mat = []
+        self._signal_by_freq = 0
+        self._noise_by_freq = 0
 
     @property
     def residuals(self):
@@ -54,6 +58,10 @@ class PTA_sim:
     @property
     def residualsFD(self):
         return self._signalFD + self._noiseFD
+    
+    @property
+    def residuals_by_freq(self):
+        return self._signal_by_freq + self._noise_by_freq
 
            
     # TODO
