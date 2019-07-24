@@ -27,7 +27,8 @@ import matplotlib.pyplot as plt
 from .nullstream_algebra import null_streams, response_matrix
 from . import class_utils
 # extra modules with functions for picking pulsars and picking sampling times
-from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, _PTA_sim_injections, _PTA_sim_likelihood)
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier,
+               _PTA_sim_injections, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
 from .harmonics import Kllmm
 
@@ -67,10 +68,10 @@ class PTA_sim:
     # TODO: move these out of the main module?
     @property
     def coupling_mat(self):
-        if np.all(np.isfinite(self._pulsars['nTOA'])):
-            weights = self._pulsars['nTOA']/self._pulsars['rms']**2
-        else:
+        if np.any(pd.isna(self._pulsars['nTOA'])):
             weights = 1/self._pulsars['rms']**2
+        else:
+            weights = self._pulsars['nTOA']/self._pulsars['rms']**2
         return Kllmm(self._pulsars, weights=weights)
 
     def plot_coupling(self, **kwargs):

@@ -14,13 +14,13 @@ from .PTA_simulation import YEAR
 #YEAR = 3600*24*365.25
 
 
-#from .harmonics import syn_cmplx_map, gw_Cl
-from harmonics import syn_cmplx_map, gw_Cl
+from .harmonics import syn_cmplx_map, gw_Cl
+#from harmonics import syn_cmplx_map, gw_Cl
 
 class SkyMap:
     def __init__(self):
 
-        self.nside = 32
+        self._nside = 32
         self._freqs = np.nan  # common set of frequencies for injections
         # common times for injections/pretty plots *OR* 2d uneven pulsar times
         self._times = np.nan
@@ -102,4 +102,4 @@ class SkyMap:
         for f in self._freqs:
             spec[f] = gw_Cl() * spec_amp[f]
 
-        self._sgwbFD = spec.apply(syn_cmplx_map)
+        self._sgwbFD = spec.apply(syn_cmplx_map, args=[self._nside])

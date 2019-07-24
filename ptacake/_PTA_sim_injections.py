@@ -8,8 +8,10 @@ functions to go in the main PTA_sim class that have to do with signal/noise inje
 import numpy as np
 import numpy.random as rd
 import matplotlib.pyplot as plt
+import healpy as hp
 
 from .nullstream_algebra import response_matrix
+from .matrix_fourier import ift
 
 def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
     """
@@ -19,9 +21,24 @@ def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
     responses = response_matrix(*source, self._pulsars[['theta', 'phi']].values)
     Fplus = np.expand_dims(responses[:, 0], -1)
     Fcross = np.expand_dims(responses[:, 1], -1)
-    
+
     # add to current signal in case we want multiple injections done
     self._signal += Fplus * hplus + Fcross * hcross
+
+def inject_stochastic(self, sky):
+    """
+    Inject stochastic correlated signal (eg GWB)
+
+    sky: instance of SkyMap
+        Frequency-domain angularly-correlated skymaps to inject
+    """
+
+    # find the frequency-domain signal for each pulsar
+    pix = hp.ang2pix(sky._nside, self._pulsars.theta, self._pulsars.phi)
+    f_signal = sky.freq_map.loc[pix]
+
+    # inverse fourier transform
+    self._signal += ift(f_signal, f_signal.columns, self._times)
 
 def white_noise(self):
     """
@@ -30,7 +47,7 @@ def white_noise(self):
     """
     # annoyingly, rd.normal cannot handle both an array for the scale values
     # and more than a scalar output for each of those values, so we have to
-    # loop through the 
+    # loop through the
     # ---> it can, but only in the reverse order (so the scale shape is the
     # same as the last, not the first axis). So we transpose at the end.
     reverse_shape = self._times.T.shape
@@ -39,7 +56,7 @@ def white_noise(self):
     self._noise = noise.T
 
     assert(self._noise.shape == self._times.shape)
-    
+
 def plot_residuals(self, draw_signal=True):
     """
     Plot times vs residuals for all pulsars
@@ -53,4 +70,4 @@ def plot_residuals(self, draw_signal=True):
     ax.set_ylabel('residuals (s)')
     return fig
 
-functions = [inject_signal, white_noise, plot_residuals]
+functions = [inject_signal, inject_stochastic, white_noise, plot_residuals]

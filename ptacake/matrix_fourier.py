@@ -12,6 +12,24 @@ Test to see if doing the funky fourier transforms in a separate module
 import numpy as np
 import scipy.linalg as la
 
+
+def ift(values, freqs, times):
+    """
+    inverse fourier transform
+    freqs: 1d array of common frequencies
+    times: 2d array of desired times
+    """
+
+    # construct ift matrix
+    mat = ifmat(freqs, times)
+
+    # matrix transform returns flattened array—need to match it to times
+    tvals_flat = np.real(mat @ flatten(np.array(values)))
+    tvals = np.full(times.shape, np.nan)
+    np.place(tvals, np.isfinite(times), tvals_flat)
+
+    return tvals
+
 # NOTE: compare to scipy.linalg.dft (when times are all the same)
 def fmat(times, freqs):
     """
