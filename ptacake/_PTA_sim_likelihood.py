@@ -222,7 +222,7 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     return ll#, norm
 
 
-def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_FD_ns_(self, source, model_func, model_args, **model_kwargs):
     """
     Log likelihood in the Frequency Domain with null streams.
     Make sure you ran fourier_residuals beforehand!!!
@@ -235,7 +235,6 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
                                             *model_args, **model_kwargs)
     
-
     # combine hplus, hcross with null streams to get full model
     nulls = (np.zeros_like(fourier_hplus),)*(self._n_pulsars-2)
     ns_model = np.hstack((fourier_hplus, fourier_hcross, *nulls)).reshape(
@@ -251,4 +250,4 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
 
 
 functions = [log_likelihood_TD, log_likelihood_TD_ns, log_likelihood_TD_es,
-             log_likelihood_FD, log_likelihood_FD_ns]
+             log_likelihood_FD, log_likelihood_FD_ns_]
