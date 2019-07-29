@@ -37,6 +37,7 @@ from .harmonics import Kllmm
                                       _PTA_sim_times.functions + 
                                       _PTA_sim_injections.functions + 
                                       _PTA_sim_fourier.functions + 
+                                      _PTA_sim_nullstream.functions +
                                       _PTA_sim_likelihood.functions)
 class PTA_sim:
     def __init__(self):
