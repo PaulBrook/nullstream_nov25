@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from ptacake import PTA_sim, YEAR
 from ptacake.GW_models import sinusoid_TD
 from tests.setup_sim import setup_evenly_sampled
-
+    
 
 def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
     """
@@ -64,7 +64,7 @@ class Test_likelihood(unittest.TestCase):
     ### Set plotting to True here if you want this unit test to make plots
     def __init__(self, *args, **kwargs):
         super(Test_likelihood, self).__init__(*args, **kwargs)
-        self.plotting = False
+        self.plotting = True
     
     @classmethod
     def setUpClass(cls):
@@ -105,6 +105,67 @@ class Test_likelihood(unittest.TestCase):
         test_fig2.savefig('./FD_residuals.pdf')
         
         npt.assert_equal(cls.sim._freqs, freqs)
+        
+        # make concatenated residuals for null-stream likelihood
+        cls.sim.concatenate_residuals()
+        
+        
+    def compare_ll_vary_params(self, ll1_name, ll2_name):
+        ll_funcs = {'TD':self.sim.log_likelihood_TD, 
+                    'FD':self.sim.log_likelihood_FD,
+                    'TD_ns':self.sim.log_likelihood_TD_ns,
+                    'FD_ns':self.sim.log_likelihood_FD_ns}
+        ll1_func = ll_funcs[ll1_name]
+        ll2_func = ll_funcs[ll2_name]
+        
+        # injection params
+        source = (0.8*np.pi, 1.3*np.pi)
+        standard_args = [0.123, 1e-14, np.pi/7, 0.5, 2e-8]
+        
+        # vary phase
+        phases = np.linspace(0, 2*np.pi, num=50)
+        ll1_phases = np.zeros(len(phases))
+        ll2_phases = np.zeros(len(phases))
+        for i, phase in enumerate(phases):
+            test_args = standard_args.copy()
+            test_args[0] = phase
+            ll1_phases[i] = ll1_func(source, sinusoid_TD, test_args)
+            ll2_phases[i] = ll2_func(source, sinusoid_TD, test_args)
+            
+        fig = compare_ll_plot(phases,ll1_phases, ll2_phases, 'phase', ll1_name, 
+                              ll2_name, realx=standard_args[0])
+        fig.savefig('./test_{}_{}_phases.pdf'.format(ll1_name, ll2_name))
+        
+        
+        # vary amplitude
+        log10_amps = np.linspace(-16, -13.5, num=100)
+        amps = 10**log10_amps
+        ll1_amps = np.zeros(len(amps))
+        ll2_amps = np.zeros(len(amps))
+        for i, amp in enumerate(amps):
+            test_args = standard_args.copy()
+            test_args[1] = amp
+            ll1_amps[i] = ll1_func(source, sinusoid_TD, test_args)
+            ll2_amps[i] = ll2_func(source, sinusoid_TD, test_args)
+    
+        fig2 = compare_ll_plot(amps, ll1_amps, ll2_amps, 'amplitude', ll1_name, 
+                               ll2_name, realx=standard_args[1], logx=True)
+        fig2.savefig('./test_{}_{}_amps.pdf'.format(ll1_name, ll2_name))
+        
+        # vary freq
+        freqs = np.linspace(5e-9, 1e-7, num=500)
+        ll1_freqs = np.zeros(len(freqs))
+        ll2_freqs = np.zeros(len(freqs))
+        for i, f in enumerate(freqs):
+            test_args = standard_args.copy()
+            test_args[-1] = f
+            ll1_freqs[i] = ll1_func(source, sinusoid_TD, test_args)
+            ll2_freqs[i] = ll2_func(source, sinusoid_TD, test_args)
+        
+        fig3 = compare_ll_plot(freqs, ll1_freqs, ll2_freqs, 'GW frequency', 
+                               ll1_name, ll2_name, realx=standard_args[-1])
+        fig3.savefig('./test_{}_{}_ll_freqs.pdf'.format(ll1_name, ll2_name))
+
 
     def test_TD_nullstreams(self):
         """
@@ -121,22 +182,28 @@ class Test_likelihood(unittest.TestCase):
         #print('TD log like: {}, TD log like w/ null streams: {}'.format(TD_ll, TD_ll_ns))
         npt.assert_almost_equal(TD_ll, TD_ll_ns, decimal=4)
         
+        if self.plotting:
+            self.compare_ll_vary_params(ll1_name='TD_ns', ll2_name='FD_ns')
         
-#    def test_FD_nullstreams(self):
-#        """
-#        Test that the FD likelihood on evenly sampled data is the same with
-#        and without nullstream conversion.
-#        """
-#        # get likelihood for parameters close to injected parameters
-#        source = (0.8*np.pi, 1.3*np.pi)
-#        sinusoid_args_test = [0.11, 1e-14, np.pi/6.7, 0.513, 2e-8]
-#        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
-#        # same likelihood but with null streams
-#        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test)
-#        
-#        print('FD log like: {}, FD log like w/ null streams: {}'.format(FD_ll, FD_ll_ns))
-#        #npt.assert_almost_equal(FD_ll, FD_ll_ns)
         
+    def test_FD_nullstreams(self):
+        """
+        Test that the FD likelihood on evenly sampled data is the same with
+        and without nullstream conversion.
+        """
+        # get likelihood for parameters close to injected parameters
+        source = (0.8*np.pi, 1.3*np.pi)
+        sinusoid_args_test = [0.11, 1e-14, np.pi/6.7, 0.513, 2e-8]
+        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
+        # same likelihood but with null streams
+        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test)
+        
+        print('FD log like: {}, FD log like w/ null streams: {}'.format(FD_ll, FD_ll_ns))
+        #npt.assert_almost_equal(FD_ll, FD_ll_ns)
+        
+        if self.plotting:
+            self.compare_ll_vary_params(ll1_name='FD', ll2_name='FD_ns')
+
 
     def test_TD_FD(self, decimal=3):
         """
@@ -154,60 +221,62 @@ class Test_likelihood(unittest.TestCase):
         ## plotting part 
         if self.plotting:
             
-            # vary phase
-            phases = np.linspace(0, 2*np.pi, num=50)
-            TD_ll_phases = []
-            FD_ll_phases = []
-            for phase in phases:
-                test_args = standard_args.copy()
-                test_args[0] = phase
-                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-                TD_ll_phases.append(ll)
-                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-                FD_ll_phases.append(ll2)
-            TD_ll_phases = np.array(TD_ll_phases)
-            FD_ll_phases = np.array(FD_ll_phases)
-                
-            fig = compare_ll_plot(phases, TD_ll_phases, FD_ll_phases, 'phase', 'TD', 
-                                  'FD', realx=standard_args[0])
-            fig.savefig('./test_FD_TD_ll_phases.pdf')
-            
-            # vary amplitude
-            log10_amps = np.linspace(-16, -13.5, num=100)
-            amps = 10**log10_amps
-            TD_ll_amps = []
-            FD_ll_amps = []
-            for amp in amps:
-                test_args = standard_args.copy()
-                test_args[1] = amp
-                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-                TD_ll_amps.append(ll)
-                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-                FD_ll_amps.append(ll2)
-            TD_ll_amps = np.array(TD_ll_amps)
-            FD_ll_amps = np.array(FD_ll_amps)
-            
-            fig2 = compare_ll_plot(amps, TD_ll_amps, FD_ll_amps, 'amplitude', 'TD', 
-                                   'FD', realx=standard_args[1], logx=True)
-            fig2.savefig('./test_FD_TD_ll_amps.pdf')
-            
-            # vary freq
-            freqs = np.linspace(5e-9, 1e-7, num=500)
-            TD_ll_freqs = []
-            FD_ll_freqs = []
-            for f in freqs:
-                test_args = standard_args.copy()
-                test_args[-1] = f
-                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-                TD_ll_freqs.append(ll)
-                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-                FD_ll_freqs.append(ll2)
-            TD_ll_freqs = np.array(TD_ll_freqs)
-            FD_ll_freqs = np.array(FD_ll_freqs)
-            
-            fig3 = compare_ll_plot(freqs, TD_ll_freqs, FD_ll_freqs, 'GW frequency', 
-                                   'TD', 'FD', realx=standard_args[-1])
-            fig3.savefig('./test_FD_TD_ll_freqs.pdf')
+            self.compare_ll_vary_params(ll1_name='TD', ll2_name='FD')
+#            
+#            # vary phase
+#            phases = np.linspace(0, 2*np.pi, num=50)
+#            TD_ll_phases = []
+#            FD_ll_phases = []
+#            for phase in phases:
+#                test_args = standard_args.copy()
+#                test_args[0] = phase
+#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
+#                TD_ll_phases.append(ll)
+#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
+#                FD_ll_phases.append(ll2)
+#            TD_ll_phases = np.array(TD_ll_phases)
+#            FD_ll_phases = np.array(FD_ll_phases)
+#                
+#            fig = compare_ll_plot(phases, TD_ll_phases, FD_ll_phases, 'phase', 'TD', 
+#                                  'FD', realx=standard_args[0])
+#            fig.savefig('./test_FD_TD_ll_phases.pdf')
+#            
+#            # vary amplitude
+#            log10_amps = np.linspace(-16, -13.5, num=100)
+#            amps = 10**log10_amps
+#            TD_ll_amps = []
+#            FD_ll_amps = []
+#            for amp in amps:
+#                test_args = standard_args.copy()
+#                test_args[1] = amp
+#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
+#                TD_ll_amps.append(ll)
+#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
+#                FD_ll_amps.append(ll2)
+#            TD_ll_amps = np.array(TD_ll_amps)
+#            FD_ll_amps = np.array(FD_ll_amps)
+#            
+#            fig2 = compare_ll_plot(amps, TD_ll_amps, FD_ll_amps, 'amplitude', 'TD', 
+#                                   'FD', realx=standard_args[1], logx=True)
+#            fig2.savefig('./test_FD_TD_ll_amps.pdf')
+#            
+#            # vary freq
+#            freqs = np.linspace(5e-9, 1e-7, num=500)
+#            TD_ll_freqs = []
+#            FD_ll_freqs = []
+#            for f in freqs:
+#                test_args = standard_args.copy()
+#                test_args[-1] = f
+#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
+#                TD_ll_freqs.append(ll)
+#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
+#                FD_ll_freqs.append(ll2)
+#            TD_ll_freqs = np.array(TD_ll_freqs)
+#            FD_ll_freqs = np.array(FD_ll_freqs)
+#            
+#            fig3 = compare_ll_plot(freqs, TD_ll_freqs, FD_ll_freqs, 'GW frequency', 
+#                                   'TD', 'FD', realx=standard_args[-1])
+#            fig3.savefig('./test_FD_TD_ll_freqs.pdf')
             
         
         ## actual test
@@ -254,63 +323,6 @@ class Test_likelihood(unittest.TestCase):
 
                 print('case3, TD log like: {:.6e}, FD log like: {:.6e}, diff {:.4e}'.format(TD_ll, FD_ll, TD_ll - FD_ll))
                 #npt.assert_almost_equal(TD_ll, FD_ll, decimal=decimal)
-        
-            return # so that we don't need a looong else block
-        
-        # vary phase
-        phases = np.linspace(0, 2*np.pi, num=50)
-        TD_ll_phases = []
-        FD_ll_phases = []
-        for phase in phases:
-            test_args = standard_args.copy()
-            test_args[0] = phase
-            ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-            TD_ll_phases.append(ll)
-            ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-            FD_ll_phases.append(ll2)
-        TD_ll_phases = np.array(TD_ll_phases)
-        FD_ll_phases = np.array(FD_ll_phases)
-            
-        fig = compare_ll_plot(phases, TD_ll_phases, FD_ll_phases, 'phase', 'TD', 
-                              'FD', realx=standard_args[0])
-        fig.savefig('./test_FD_TD_ll_phases.pdf')
-        
-        # vary amplitude
-        log10_amps = np.linspace(-17, -15.5, num=100)
-        amps = 10**log10_amps
-        TD_ll_amps = []
-        FD_ll_amps = []
-        for amp in amps:
-            test_args = standard_args.copy()
-            test_args[1] = amp
-            ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-            TD_ll_amps.append(ll)
-            ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-            FD_ll_amps.append(ll2)
-        TD_ll_amps = np.array(TD_ll_amps)
-        FD_ll_amps = np.array(FD_ll_amps)
-        
-        fig2 = compare_ll_plot(amps, TD_ll_amps, FD_ll_amps, 'amplitude', 'TD', 
-                               'FD', realx=standard_args[1], logx=True)
-        fig2.savefig('./test_FD_TD_ll_amps.pdf')
-        
-        # vary freq
-        freqs = np.linspace(5e-9, 1e-7, num=500)
-        TD_ll_freqs = []
-        FD_ll_freqs = []
-        for f in freqs:
-            test_args = standard_args.copy()
-            test_args[-1] = f
-            ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-            TD_ll_freqs.append(ll)
-            ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-            FD_ll_freqs.append(ll2)
-        TD_ll_freqs = np.array(TD_ll_freqs)
-        FD_ll_freqs = np.array(FD_ll_freqs)
-        
-        fig3 = compare_ll_plot(freqs, TD_ll_freqs, FD_ll_freqs, 'GW frequency', 
-                               'TD', 'FD', realx=standard_args[-1])
-        fig3.savefig('./test_FD_TD_ll_freqs.pdf')
         
     
     # expect failure for high precision test
