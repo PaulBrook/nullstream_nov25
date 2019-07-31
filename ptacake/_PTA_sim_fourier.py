@@ -81,7 +81,7 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         self._TOA_FD_covs.append(FD_cov)
         self._TOA_FD_inv_covs.append(np.linalg.inv(FD_cov))
         sign, logdet = np.linalg.slogdet(FD_cov)
-        self._TOA_FD_cov_logdets.append(logdet)
+        self._TOA_FD_cov_logdets.append(logdet)    
         
     # we have everything set up to fourier the TOA residuals now
     self._TOA_fourier_ready = True

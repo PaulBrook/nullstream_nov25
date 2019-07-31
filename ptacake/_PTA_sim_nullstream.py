@@ -7,6 +7,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.linalg import block_diag
 from .nullstream_algebra import construct_M
+import matplotlib.pyplot as plt
 
     
 def concatenate_residuals(self):
@@ -21,48 +22,37 @@ def concatenate_residuals(self):
     if np.shape(self._noise) is not ():
         self._noise_concat = self._noiseFD.flatten()
         
+    # pre-compute FD covariance for concatenated residuals
+    self._big_FD_cov = block_diag(*self._TOA_FD_covs)
+    self._inv_big_FD_cov = block_diag(*self._TOA_FD_inv_covs)
+        
 
 def _ns_covariance(self, small_ns_mat):
     P = self._n_pulsars
     N = self._n_freqs
     
+    inv_small_ns_mat = la.inv(small_ns_mat)
+    
     big_ns_mat = np.zeros((P*N, P*N))
+    inv_big_ns_mat = np.zeros((P*N, P*N))
     for j in range(N):
         # starting from point [j, j], put the elements of the small ns_mat
         # at every point [j + a*N, j + b*N], with a and b any integers.
         big_ns_mat[j::N, j::N] = small_ns_mat
-    
-#    # for-loop method of computing the ns FD covariance (Eq. 19)
-#    Z = np.zeros((P*N, P*N))
-#    for A, B in np.ndindex(Z.shape):
-#        k = A//N
-#        alpha = A%N
-#        l = B//N
-#        beta = B%N
-#
-#        # NOTE: I tested an alternative to the lines below by using an array of the
-#        # TOA_FD_covs and no for-loop, but it is slightly slower
-#        element = 0
-#        for s, sig in enumerate(self._TOA_FD_covs):
-#            element += small_ns_mat[k, s] * sig[alpha, beta] * small_ns_mat[l, s]
-#        
-#        Z[A, B] = element
-        
-    # big matrix multiplication method to compute Z (lot faster!)
-    big_FD_cov = block_diag(*self._TOA_FD_covs)
-    Z = big_ns_mat @ big_FD_cov @ np.conj(big_ns_mat.T)
+        inv_big_ns_mat[j::N, j::N] = inv_small_ns_mat
     
     # compute determinant of the ns covariance matrix
     sign, log_det_ns_mat = la.slogdet(small_ns_mat)
     log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
     
-    # compute inverse cov, can this be done in a more clever way?
-    # ideas for computing Z more efficiently maybe
-    # einsum first line of eq. 19 over "big" indices
-    # weighted scalar product in numpy?
+    # compute inv FD ns covariance (Eq. 23)
+    Zinv = inv_big_ns_mat.T @ self._inv_big_FD_cov @ inv_big_ns_mat
     
-#    # zinv by pieces
-#    inv_small_ns = la.inv(small_ns_mat)
+#    # zinv by pieces: it's possible this is faster for quite large numbers of P and Nf
+#    # but I couldn't pin down the scaling in some speed tests. I think it's unlikely
+#    # to be faster, so let's leave it for now and perhaps come back if we find we
+#    # are too slow for actual runs
+#
 #    Zinv = np.zeros((P*N, P*N))
 #    for A, B in np.ndindex(Zinv.shape):
 #        k = A//N
@@ -72,14 +62,11 @@ def _ns_covariance(self, small_ns_mat):
 #        
 #        element = 0
 #        for s, inv_sig in enumerate(self._TOA_FD_inv_covs):
-#            element += inv_small_ns[s, k] * inv_sig[alpha, beta] * inv_small_ns[s, q]
+#            element += inv_small_ns_mat[s, k] * inv_sig[alpha, beta] * inv_small_ns_mat[s, q]
 #    
 #        Zinv[A, B] = element
-    
-    # direct inverse (this is faster)
-    Zinv = la.inv(Z)
-    
-    return big_ns_mat, Z, Zinv, log_det_Z
+
+    return big_ns_mat, Zinv, log_det_Z
 
 
 def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
@@ -93,8 +80,8 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     pulsar_array = self._pulsars[['theta', 'phi']].values
     ns_mat = construct_M(*source, pulsar_array) # the "small" ns matrix
     
-    # get big (concatenated) ns matrix. ns covariance, its invserve and its determinant
-    big_ns_mat, ns_cov, inv_ns_cov, log_det_ns_cov = self._ns_covariance(ns_mat)
+    # get big (concatenated) ns matrix, ns covariance invserve and its determinant
+    big_ns_mat, inv_ns_cov, log_det_ns_cov = self._ns_covariance(ns_mat)
     
     # make null-streams out of concatenated residuals
     # @ does matrix multiplication
@@ -108,7 +95,8 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     
     # compute product of data - model
     x = null_streams - ns_model
-    ll = -0.5 * (np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
+    # we think there should be a factor of 2 here to compensate for missing negative frequencies
+    ll = -0.5 * 2 * (np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
     # no 0.5 in norm because complex quantity
     norm = N*P*np.log(2*np.pi) - log_det_ns_cov
     
