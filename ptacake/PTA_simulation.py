@@ -10,6 +10,7 @@ import pandas as pd
 #import healpy as hp
 #import matplotlib.pyplot as plt
 
+
 try:
     from jannasutils import radec_location_to_ang, isIterable
 except:
@@ -23,20 +24,19 @@ except:
 
 import matplotlib.pyplot as plt
 
-#from nullstream_algebra import response_matrix
-from .nullstream_algebra import null_streams, response_matrix
+from .nullstream_algebra import null_streams, response_matrix, construct_M
 from . import class_utils
-# extra modules with functions for picking pulsars and picking sampling times
-from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier,
-               _PTA_sim_injections, _PTA_sim_likelihood)
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, 
+               _PTA_sim_injections, _PTA_sim_nullstream, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
 from .harmonics import Kllmm
 
 # add methods from other modules to the main class
-@class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions +
-                                      _PTA_sim_times.functions +
-                                      _PTA_sim_fourier.functions +
-                                      _PTA_sim_injections.functions +
+@class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions + 
+                                      _PTA_sim_times.functions + 
+                                      _PTA_sim_injections.functions + 
+                                      _PTA_sim_fourier.functions + 
+                                      _PTA_sim_nullstream.functions +
                                       _PTA_sim_likelihood.functions)
 class PTA_sim:
     def __init__(self):
@@ -55,6 +55,8 @@ class PTA_sim:
         self._TOA_fourier_mats = []
         self._model_weights = []
         self._model_fourier_mat = []
+        self._signal_by_freq = 0
+        self._noise_by_freq = 0
 
     @property
     def residuals(self):
@@ -63,6 +65,10 @@ class PTA_sim:
     @property
     def residualsFD(self):
         return self._signalFD + self._noiseFD
+    
+    @property
+    def residuals_concat(self):
+        return self._signal_concat + self._noise_concat
 
 
     # TODO: move these out of the main module?
@@ -90,11 +96,8 @@ class PTA_sim:
 
         return fig, ax
 
-
-    # TODO
-    # ... likelihood, cpnest etc etc
-
-
+    
+    
 
 
 #    def log_likelihood_ns_phi_marg(self, source, model_func, model_args, **model_kwargs):
