@@ -41,10 +41,6 @@ def _ns_covariance(self, small_ns_mat):
         big_ns_mat[j::N, j::N] = small_ns_mat
         inv_big_ns_mat[j::N, j::N] = inv_small_ns_mat
     
-    # compute determinant of the ns covariance matrix
-    sign, log_det_ns_mat = la.slogdet(small_ns_mat)
-    log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
-    
     # compute inv FD ns covariance (Eq. 23)
     Zinv = inv_big_ns_mat.T @ self._inv_big_FD_cov @ inv_big_ns_mat
     
@@ -65,6 +61,15 @@ def _ns_covariance(self, small_ns_mat):
 #            element += inv_small_ns_mat[s, k] * inv_sig[alpha, beta] * inv_small_ns_mat[s, q]
 #    
 #        Zinv[A, B] = element
+    
+    # compute determinant of the ns covariance matrix
+    #(about two times faster than method below)
+    sign, log_det_ns_mat = la.slogdet(small_ns_mat)
+    log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
+    
+#    # compute deterimant from det(Zinv)
+#    sign, log_det_Zinv = la.slogdet(Zinv)
+#    log_det_Z = -log_det_Zinv
 
     return big_ns_mat, Zinv, log_det_Z
 

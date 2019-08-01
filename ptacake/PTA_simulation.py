@@ -29,7 +29,7 @@ from . import class_utils
 from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, 
                _PTA_sim_injections, _PTA_sim_nullstream, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
-from .harmonics import Kllmm
+#from .harmonics import Kllmm # this gave an error bc there is no Kllmm in the harmonics module
 
 # add methods from other modules to the main class
 @class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions + 
