@@ -14,7 +14,8 @@ from .nullstream_algebra import null_streams, response_matrix
 hl2p = 0.5 * np.log(2*np.pi)
 
     
-def log_likelihood_TD_es(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_TD_es(self, source, model_func, model_args, 
+                         add_norm=True, return_only_norm=False, **model_kwargs):
     """
     Time domain log likelihood, only for evenly sampled data.
     """
@@ -31,15 +32,22 @@ def log_likelihood_TD_es(self, source, model_func, model_args, **model_kwargs):
     x = self.residuals - model
     inv_cov = np.diag(self._pulsars['rms'].values**(-2))
     product = np.einsum('i...,ik,k...', x, inv_cov, x)
-    ll_no_norm = -0.5 * np.sum(product) # sum over times
+    ll = -0.5 * np.sum(product) # sum over times
+    
     # use log(det(cov)) = -log(det(inv_cov))
     sign, logdet = np.linalg.slogdet(inv_cov)
     norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
-    ll = ll_no_norm #+ norm
     
-    return ll#, norm
+    if return_only_norm:
+        return norm
+    
+    if add_norm:
+        ll += norm
+        
+    return ll
 
-def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_TD(self, source, model_func, model_args, 
+                      add_norm=False, return_only_norm=False, **model_kwargs):
     """
     Time domain log likelihood that works for any sampling of data.
     """
@@ -53,7 +61,7 @@ def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
     model_hplus, model_hcross = model_func(self._times, *model_args, **model_kwargs)
     
     # compute logl and norm by summing contributions per pulsar
-    logl = 0
+    ll = 0
     norm = 0
     
     for p in range(self._n_pulsars):
@@ -67,16 +75,25 @@ def log_likelihood_TD(self, source, model_func, model_args, **model_kwargs):
         x = self.residuals[p][mask] - model
         inv_cov = self._TD_inv_covs[p]
         product = np.einsum('i,ij,j', x, inv_cov, x)
-        logl += -0.5 * np.sum(product) # np.sum sums over times
+        ll += -0.5 * np.sum(product) # np.sum sums over times
+        
         # use log(det(cov)) = -log(det(inv_cov))
-        sign, logdet = np.linalg.slogdet(inv_cov)
-        norm += -num_times*hl2p + 0.5*logdet
+        sign, logdet_inv_cov = np.linalg.slogdet(inv_cov)
+        logdet_cov = - logdet_inv_cov
+        #print('log( det( cov)): {}'.format(logdet_cov))
+        norm += -num_times*hl2p - 0.5*logdet_cov
     
-    ll = logl #+ norm
-    return ll#, norm
+    if return_only_norm:
+        return norm
+    
+    if add_norm:
+        ll += norm
+        
+    return ll
     
 
-def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_TD_ns(self, source, model_func, model_args, 
+                         add_norm=True, return_only_norm=False, **model_kwargs):
     """
     Time domain null-stream likelihood only possible for evenly sampled times.
     """
@@ -100,17 +117,23 @@ def log_likelihood_TD_ns(self, source, model_func, model_args, **model_kwargs):
     # take product of "null-streamed" residuals - model
     x = ns_data - ns_model
     product = np.einsum('i...,ik,k...', x, ns_inv_cov, x)
+    ll = -0.5 * np.sum(product) # sum over times
     
-    ll_no_norm = -0.5 * np.sum(product) # sum over times
     # use log(det(cov)) = -log(det(inv_cov))
     sign, logdet = np.linalg.slogdet(ns_inv_cov)
     norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
-    ll = ll_no_norm #+ norm
+
+    if return_only_norm:
+        return norm    
     
-    return ll#, norm
+    if add_norm:
+        ll += norm
+    
+    return ll
 
    
-def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_FD(self, source, model_func, model_args, 
+                      add_norm=True, return_only_norm=False, **model_kwargs):
     # call model function with args and preset model times, then funky fourier
     fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
                                                 *model_args, **model_kwargs)
@@ -123,7 +146,7 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
     model = Fplus * fourier_hplus + Fcross * fourier_hcross
     
     # compute logl and norm by summing contributions per pulsar
-    logl = 0
+    ll = 0
     norm = 0
     
     for p in range(self._n_pulsars):
@@ -132,13 +155,19 @@ def log_likelihood_FD(self, source, model_func, model_args, **model_kwargs):
         inv_cov = self._TOA_FD_inv_covs[p]
         product = np.einsum('a,ab,b', x, inv_cov, np.conj(x))
         # we think there should be a factor of 2 here to compensate for missing negative frequencies
-        logl += -0.5 * 2 * np.real(np.sum(product)) # np.sum sums over frequencies
+        ll += -0.5 * 2 * np.real(np.sum(product)) # np.sum sums over frequencies
+        
         # use log(det(cov)) = -log(det(inv_cov))
         sign, logdet = np.linalg.slogdet(inv_cov)
         norm += -self._n_freqs*hl2p + 0.5*logdet
+        
+    if return_only_norm:
+        return norm        
     
-    ll = logl #+ norm
-    return ll#, norm
+    if add_norm:
+        ll += norm
+
+    return ll
 
 
 functions = [log_likelihood_TD, log_likelihood_TD_ns, log_likelihood_TD_es,

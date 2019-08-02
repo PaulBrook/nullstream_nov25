@@ -2,6 +2,9 @@
 Created on Tue Jun 18 12:33:34 2019
 
 @author: jgoldstein
+
+when testing if two likelihoods are the same: test without norm, because we don't
+expect the normalized likelihoods to be the same still
 """
 import unittest
 import numpy as np
@@ -14,7 +17,7 @@ from ptacake.GW_models import sinusoid_TD
 from tests.setup_sim import setup_evenly_sampled
     
 
-def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
+def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False, add_norm=True):
     """
     make a figure with plots of variable x vs log likelihood, to compare
     two likelihood functions (ll1 and ll2) as a function of x. First and second
@@ -40,9 +43,13 @@ def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
     ax3.plot(x, ll1, c='b', label=label1)
     ax3.plot(x, ll2, c='r', linestyle='--', label=label2)
     ax4.plot(x, ll1/ll2, c='k', label='{}/{}'.format(label1, label2))
-    ax4.hlines(1.0, *ax4.get_xlim(), linestyle='--', color='gray')
+    # if using norm, don't expect the ratio to be one so we don't want a line there
+    if not add_norm:
+        ax4.hlines(1.0, *ax4.get_xlim(), linestyle='--', color='gray')
     ax5.plot(x, ll1-ll2, c='purple', label='{} - {}'.format(label1, label2))
-    ax5.hlines(0.0, *ax5.get_xlim(), linestyle='--', color='gray')
+    # if using norm, don't expect difference to be zero so we don't want a line there
+    if not add_norm: 
+        ax5.hlines(0.0, *ax5.get_xlim(), linestyle='--', color='gray')
     ax6.plot(x, (ll1-ll2)/ll2, c='g', label='({} - {})/{}'.format(label1, label2, label2))
     
     axes = [ax1, ax2, ax3, ax4, ax5, ax6]
@@ -54,6 +61,10 @@ def compare_ll_plot(x, ll1, ll2, xname, label1, label2, realx=None, logx=False):
         
     for ax in axes:
         ax.legend(loc='best')
+        if add_norm:
+            ax.set_ylabel('log likelihood w/ norm')
+        else:
+            ax.set_ylabel('log likelihood')
     axes[-1].set_xlabel(xname)
     
     fig.tight_layout()
@@ -65,6 +76,7 @@ class Test_likelihood(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(Test_likelihood, self).__init__(*args, **kwargs)
         self.plotting = True
+        self.add_norm = True # only used for plotting (testing always w/o norm)
     
     @classmethod
     def setUpClass(cls):
@@ -110,7 +122,7 @@ class Test_likelihood(unittest.TestCase):
         cls.sim.concatenate_residuals()
         
         
-    def compare_ll_vary_params(self, ll1_name, ll2_name):
+    def compare_ll_vary_params(self, ll1_name, ll2_name, add_norm=True):
         ll_funcs = {'TD':self.sim.log_likelihood_TD, 
                     'FD':self.sim.log_likelihood_FD,
                     'TD_ns':self.sim.log_likelihood_TD_ns,
@@ -129,11 +141,11 @@ class Test_likelihood(unittest.TestCase):
         for i, phase in enumerate(phases):
             test_args = standard_args.copy()
             test_args[0] = phase
-            ll1_phases[i] = ll1_func(source, sinusoid_TD, test_args)
-            ll2_phases[i] = ll2_func(source, sinusoid_TD, test_args)
+            ll1_phases[i] = ll1_func(source, sinusoid_TD, test_args, add_norm=add_norm)
+            ll2_phases[i] = ll2_func(source, sinusoid_TD, test_args, add_norm=add_norm)
             
         fig = compare_ll_plot(phases,ll1_phases, ll2_phases, 'phase', ll1_name, 
-                              ll2_name, realx=standard_args[0])
+                              ll2_name, realx=standard_args[0], add_norm=add_norm)
         fig.savefig('./test_{}_{}_phases.pdf'.format(ll1_name, ll2_name))
         
         
@@ -145,11 +157,11 @@ class Test_likelihood(unittest.TestCase):
         for i, amp in enumerate(amps):
             test_args = standard_args.copy()
             test_args[1] = amp
-            ll1_amps[i] = ll1_func(source, sinusoid_TD, test_args)
-            ll2_amps[i] = ll2_func(source, sinusoid_TD, test_args)
+            ll1_amps[i] = ll1_func(source, sinusoid_TD, test_args, add_norm=add_norm)
+            ll2_amps[i] = ll2_func(source, sinusoid_TD, test_args, add_norm=add_norm)
     
         fig2 = compare_ll_plot(amps, ll1_amps, ll2_amps, 'amplitude', ll1_name, 
-                               ll2_name, realx=standard_args[1], logx=True)
+                               ll2_name, realx=standard_args[1], logx=True, add_norm=add_norm)
         fig2.savefig('./test_{}_{}_amps.pdf'.format(ll1_name, ll2_name))
         
         # vary freq
@@ -159,11 +171,11 @@ class Test_likelihood(unittest.TestCase):
         for i, f in enumerate(freqs):
             test_args = standard_args.copy()
             test_args[-1] = f
-            ll1_freqs[i] = ll1_func(source, sinusoid_TD, test_args)
-            ll2_freqs[i] = ll2_func(source, sinusoid_TD, test_args)
+            ll1_freqs[i] = ll1_func(source, sinusoid_TD, test_args, add_norm=add_norm)
+            ll2_freqs[i] = ll2_func(source, sinusoid_TD, test_args, add_norm=add_norm)
         
         fig3 = compare_ll_plot(freqs, ll1_freqs, ll2_freqs, 'GW frequency', 
-                               ll1_name, ll2_name, realx=standard_args[-1])
+                               ll1_name, ll2_name, realx=standard_args[-1], add_norm=add_norm)
         fig3.savefig('./test_{}_{}_ll_freqs.pdf'.format(ll1_name, ll2_name))
 
 
@@ -175,15 +187,15 @@ class Test_likelihood(unittest.TestCase):
         # get likelihood for parameters close to injected parameters
         source = (0.8*np.pi, 1.3*np.pi)
         sinusoid_args_test = [0.14, 1e-14, np.pi/7.2, 0.48, 2e-8]
-        TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, sinusoid_args_test)
+        TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, sinusoid_args_test, add_norm=False)
         # same but likelihood but with null streams
-        TD_ll_ns = self.sim.log_likelihood_TD_ns(source, sinusoid_TD, sinusoid_args_test)
+        TD_ll_ns = self.sim.log_likelihood_TD_ns(source, sinusoid_TD, sinusoid_args_test, add_norm=False)
         
         #print('TD log like: {}, TD log like w/ null streams: {}'.format(TD_ll, TD_ll_ns))
         npt.assert_almost_equal(TD_ll, TD_ll_ns, decimal=4)
         
         if self.plotting:
-            self.compare_ll_vary_params(ll1_name='TD_ns', ll2_name='FD_ns')
+            self.compare_ll_vary_params(ll1_name='TD', ll2_name='TD_ns', add_norm=self.add_norm)
         
         
     def test_FD_nullstreams(self):
@@ -194,15 +206,15 @@ class Test_likelihood(unittest.TestCase):
         # get likelihood for parameters close to injected parameters
         source = (0.8*np.pi, 1.3*np.pi)
         sinusoid_args_test = [0.11, 1e-14, np.pi/6.7, 0.513, 2e-8]
-        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test)
+        FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test, add_norm=False)
         # same likelihood but with null streams
-        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test)
+        FD_ll_ns = self.sim.log_likelihood_FD_ns(source, sinusoid_TD, sinusoid_args_test, add_norm=False)
         
         print('FD log like: {}, FD log like w/ null streams: {}'.format(FD_ll, FD_ll_ns))
         #npt.assert_almost_equal(FD_ll, FD_ll_ns)
         
         if self.plotting:
-            self.compare_ll_vary_params(ll1_name='FD', ll2_name='FD_ns')
+            self.compare_ll_vary_params(ll1_name='FD', ll2_name='FD_ns', add_norm=self.add_norm)
 
 
     def test_TD_FD(self, decimal=3):
@@ -219,72 +231,16 @@ class Test_likelihood(unittest.TestCase):
         standard_args = [0.123, 1e-14, np.pi/7, 0.5, 2e-8]
         
         ## plotting part 
-        if self.plotting:
+        if self.plotting:    
+            self.compare_ll_vary_params(ll1_name='TD', ll2_name='FD', add_norm=self.add_norm)
+            self.compare_ll_vary_params(ll1_name='TD_ns', ll2_name='FD_ns', add_norm=self.add_norm)
             
-            self.compare_ll_vary_params(ll1_name='TD', ll2_name='FD')
-#            
-#            # vary phase
-#            phases = np.linspace(0, 2*np.pi, num=50)
-#            TD_ll_phases = []
-#            FD_ll_phases = []
-#            for phase in phases:
-#                test_args = standard_args.copy()
-#                test_args[0] = phase
-#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-#                TD_ll_phases.append(ll)
-#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-#                FD_ll_phases.append(ll2)
-#            TD_ll_phases = np.array(TD_ll_phases)
-#            FD_ll_phases = np.array(FD_ll_phases)
-#                
-#            fig = compare_ll_plot(phases, TD_ll_phases, FD_ll_phases, 'phase', 'TD', 
-#                                  'FD', realx=standard_args[0])
-#            fig.savefig('./test_FD_TD_ll_phases.pdf')
-#            
-#            # vary amplitude
-#            log10_amps = np.linspace(-16, -13.5, num=100)
-#            amps = 10**log10_amps
-#            TD_ll_amps = []
-#            FD_ll_amps = []
-#            for amp in amps:
-#                test_args = standard_args.copy()
-#                test_args[1] = amp
-#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-#                TD_ll_amps.append(ll)
-#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-#                FD_ll_amps.append(ll2)
-#            TD_ll_amps = np.array(TD_ll_amps)
-#            FD_ll_amps = np.array(FD_ll_amps)
-#            
-#            fig2 = compare_ll_plot(amps, TD_ll_amps, FD_ll_amps, 'amplitude', 'TD', 
-#                                   'FD', realx=standard_args[1], logx=True)
-#            fig2.savefig('./test_FD_TD_ll_amps.pdf')
-#            
-#            # vary freq
-#            freqs = np.linspace(5e-9, 1e-7, num=500)
-#            TD_ll_freqs = []
-#            FD_ll_freqs = []
-#            for f in freqs:
-#                test_args = standard_args.copy()
-#                test_args[-1] = f
-#                ll = self.sim.log_likelihood_TD(source, sinusoid_TD, test_args)
-#                TD_ll_freqs.append(ll)
-#                ll2 = self.sim.log_likelihood_FD(source, sinusoid_TD, test_args)
-#                FD_ll_freqs.append(ll2)
-#            TD_ll_freqs = np.array(TD_ll_freqs)
-#            FD_ll_freqs = np.array(FD_ll_freqs)
-#            
-#            fig3 = compare_ll_plot(freqs, TD_ll_freqs, FD_ll_freqs, 'GW frequency', 
-#                                   'TD', 'FD', realx=standard_args[-1])
-#            fig3.savefig('./test_FD_TD_ll_freqs.pdf')
-            
-        
         ## actual test
         else:
             
             # case 1, injection parameters
-            TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, standard_args)
-            FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, standard_args)
+            TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, standard_args, add_norm=False)
+            FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, standard_args, add_norm=False)
 
             print('case1, TD log like: {:.6e}, FD log like: {:.6e}, diff {:.4e}'.format(TD_ll, FD_ll, TD_ll - FD_ll))
             # expect log(l) = 0 here (since using no noise), so we check for that
@@ -296,8 +252,8 @@ class Test_likelihood(unittest.TestCase):
             
             # case 2, sinusoid parameters somewhat off, same source
             sinusoid_args_test2 = [0.18, 1e-14, np.pi/6.8, 0.52, 2e-8]
-            TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, sinusoid_args_test2)
-            FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test2)
+            TD_ll = self.sim.log_likelihood_TD(source, sinusoid_TD, sinusoid_args_test2, add_norm=False)
+            FD_ll = self.sim.log_likelihood_FD(source, sinusoid_TD, sinusoid_args_test2, add_norm=False)
             
             print('case2, TD log like: {:.6e}, FD log like: {:.6e}, diff {:.4e}'.format(TD_ll, FD_ll, TD_ll - FD_ll))
             npt.assert_almost_equal(TD_ll, FD_ll, decimal=decimal)
@@ -318,8 +274,8 @@ class Test_likelihood(unittest.TestCase):
                 # small offset to frequency between -1e-9 and +1e-9
                 sinusoid_args_test3[4] += (rd.random() - 0.5) * 2e-9
                 
-                TD_ll = self.sim.log_likelihood_TD(source_test3, sinusoid_TD, sinusoid_args_test3)
-                FD_ll = self.sim.log_likelihood_FD(source_test3, sinusoid_TD, sinusoid_args_test3)
+                TD_ll = self.sim.log_likelihood_TD(source_test3, sinusoid_TD, sinusoid_args_test3, add_norm=False)
+                FD_ll = self.sim.log_likelihood_FD(source_test3, sinusoid_TD, sinusoid_args_test3, add_norm=False)
 
                 print('case3, TD log like: {:.6e}, FD log like: {:.6e}, diff {:.4e}'.format(TD_ll, FD_ll, TD_ll - FD_ll))
                 #npt.assert_almost_equal(TD_ll, FD_ll, decimal=decimal)

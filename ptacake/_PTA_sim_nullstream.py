@@ -74,7 +74,8 @@ def _ns_covariance(self, small_ns_mat):
     return big_ns_mat, Zinv, log_det_Z
 
 
-def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
+def log_likelihood_FD_ns(self, source, model_func, model_args, 
+                         add_norm=True, return_only_norm=False, **model_kwargs):
     """
     FD log likelihood using null-streams
     """
@@ -108,7 +109,13 @@ def log_likelihood_FD_ns(self, source, model_func, model_args, **model_kwargs):
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
     
-    return ll #+ norm
+    if return_only_norm:
+        return norm
+    
+    if add_norm:
+        ll += norm
+    
+    return ll
 
 
 functions = [concatenate_residuals, _ns_covariance, log_likelihood_FD_ns]
