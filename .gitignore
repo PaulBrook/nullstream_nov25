@@ -8,3 +8,4 @@ dist/*
 *.png
 *.pdf
 *.DS_Store
+cpnest_output/*
