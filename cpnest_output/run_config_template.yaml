@@ -38,7 +38,7 @@ ll_name: FD
 
 ### output ####
 # path to output dir, can also be path to file but in either case dir is used
-output_path: /home/jgoldstein/Documents/Nullstream/cpnest_output
+output_path: /home/jgoldstein/Documents/projects/Nullstream/cpnest_output
 
 ### sampler opts ###
 sampler_opts:

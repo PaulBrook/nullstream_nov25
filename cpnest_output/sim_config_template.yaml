@@ -1,0 +1,81 @@
+##############################################
+# yaml configuration file for PTA simulation #
+##############################################
+#
+#NOTE: This is the template file in the git
+#please copy and edit your copy for running purposes.
+#
+#NOTE: PyYAML is picky about parsing floats, and will happily revert to
+#strings (!) for numbers in scientific notation.  Make sure you have
+#    - a decimal point AND
+#    - a sign attached to the exponent (e.g. 2.0e+4)
+#
+##############################################
+
+### pulsar options ###
+pulsar_opts:
+    # specify random, from_file or from_array
+    how: random
+    # if random, need to specify options below
+    num_pulsars: 5
+    mean_rms: 1.0e-7
+    sig_rms: 5.0e-8
+    uniform: False
+
+# if from_file, need to specify file path below
+pulsar_file: ./PTA_files/IPTA_pulsars.
+
+# if from_array, need to specify pulsar locations and rms below
+# each location is [theta, phi] with 0 < theta < pi and 0 < phi < 2pi
+pulsar_array:
+    - [0.8, 2.9] # these are some random oordinates
+    - [1.9, 6.2]
+    - [2.4, 4.0]
+pulsar_rms:
+    - 2.2e-7
+    - 1.3e-7
+    - 0.9e-7
+
+### times opttions ###
+# if True, use sim.evenly_sampled_times, and specify times_es_opts
+# if False, use sim.randomized_times, and specify times_rd_opts
+times_evenly_sampled: False
+
+# some useful numbers
+# 1 year = 31557600.0
+# 5 years = 157788000.0
+# 20 years =  631152000.0
+
+times_es_opts:
+    cadence: 1.0e6
+    T: 631152000.0
+    t_start: 0.0
+
+times_rd_opts:
+    mean_cadence: 1.0e6
+    std_cadence: 1.0e5
+    min_cadence: 1.0e5
+    t_start: 0.0
+    t_end: 631152000.0 
+    gaps: True
+    exp_gap_spacing: 157788000.0
+    exp_gap_length: 1.0e7
+    
+
+### signal and noise injection ###
+
+# currently only have sinusoid_TD (a GW binary w/o inspiral) implemented
+model_name: sinusoid_TD
+true_source: [0.5, 0.5]
+true_args: [0.5, 1e-14, 0.5, 0.5, 2e-8] # need to match args of chosen model
+
+# if True, add white noise according to each pulsar's rms
+white_noise: False
+
+
+### plotting options ###
+
+# plots are put in the output file specified in run_config
+plot_residuals_TD: True
+plot_residuals_FD: True
+
