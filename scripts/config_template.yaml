@@ -1,0 +1,48 @@
+#############################################
+# yaml configuration file for cpnest runs   #
+#############################################
+#
+#
+#NOTE: This is the template file in the git
+#please copy and edit your copy for running purposes.
+#
+#NOTE: PyYAML is picky about parsing floats, and will happily revert to
+#strings (!) for numbers in scientific notation.  Make sure you have
+#    - a decimal point AND
+#    - a sign attached to the exponent (e.g. 2.0e+4)
+#
+#############################################
+
+### model, parameters priors etc ###
+
+# currently only have sinusoid_TD (a GW binary w/o inspiral) implemented
+model_name: sinusoid_TD
+
+# for every parameter of the model, plus theta, phi for the sky location
+# either give a fixed value or a [lower, upper] prior range
+# can add log in front of any model parameter (not theta or phi, but we won't need that)
+# it'll be interpreted at log10 of that parameter value
+prior_or_value:
+    phase: [0, 6.283185307179586] # do something else for pi? maybe save default ranges somewhere?
+    logamp: [-16, -12]
+    pol: [0, 3.141592653589793]
+    cosi: [-1, 1]
+    GW_freq: [0, 1e-7]
+    theta: [0, 3.141592653589793]
+    phi: [0, 6.283185307179586]
+    
+# which likelihood function to use. We have TD, FD, FD_ns for any data
+# or TD_es, TD_ns only for evenly sampled data (ns = null-stream, es = evenly sampled)
+ll_name: FD
+
+
+### output ####
+# path to output dir, can also be path to file but in either case dir is used
+output_path: /home/jgoldstein/Documents/Nullstream/cpnest_output
+
+### sampler opts ###
+sampler_opts:
+    nlive: 1024
+    nsteps: 2000
+    nthreads: 1
+    resume: True
