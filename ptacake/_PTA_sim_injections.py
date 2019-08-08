@@ -45,11 +45,10 @@ def white_noise(self):
     Inject gaussian noise according to each pulsar's rms level.
     This deletes any previously injected noise (but keeps signal the same).
     """
-    # annoyingly, rd.normal cannot handle both an array for the scale values
-    # and more than a scalar output for each of those values, so we have to
-    # loop through the
-    # ---> it can, but only in the reverse order (so the scale shape is the
-    # same as the last, not the first axis). So we transpose at the end.
+    # We want to get multiple output values (num times) for each value of the
+    # noise rms (sigma). np.random can do this, but only if the requested
+    # output size is the shape (num times, num sigma) and not the other way around.
+    # So we request is in "reversed" order, then transpose the output.
     reverse_shape = self._times.T.shape
     noise = rd.normal(scale=self._pulsars['rms'].values, size=reverse_shape)
     # don't add to any previously existing noise
@@ -63,8 +62,8 @@ def plot_residuals(self, draw_signal=True):
     """
     fig, ax = plt.subplots(1)
     if draw_signal:
-        # plot line through signal only, use the same colour as the corresponding residuals
-        ax.plot(self._times.T, self._signal.T, ls='-', linewidth=0.5, alpha=0.5, c='k')
+        # plot line through signal only
+        ax.plot(self._times.T, self._signal.T, ls='-', linewidth=0.5, alpha=0.7, c='k')
     ax.plot(self._times.T, self.residuals.T, ls='none', marker='.', markersize=2)
     ax.set_xlabel('time (s)')
     ax.set_ylabel('residuals (s)')

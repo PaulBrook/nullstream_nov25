@@ -46,6 +46,29 @@ def log_likelihood_TD_es(self, source, model_func, model_args,
         
     return ll
 
+# TODO: is this correct?!?!
+def compute_SNR(self):
+    """
+    Compute signal to noise ratio of injected signal, assuming
+    noise level specified by pulsar rms values. Computation in the 
+    time domain.
+    
+    Returns
+    -------
+    float:
+        Signal to noise ratio of injected signal
+    """
+    snr2 = 0
+    for p in range(self._n_pulsars):
+        # get mask for which times are not nan
+        mask = np.isfinite(self._times[p])
+        signal = self._signal[p][mask]
+        inv_cov = self._TD_inv_covs[p]
+        product = np.einsum('i,ij,j', signal, inv_cov, signal)
+        snr2 += product
+    return np.sqrt(snr2)
+    
+
 def log_likelihood_TD(self, source, model_func, model_args, 
                       add_norm=False, return_only_norm=False, **model_kwargs):
     """
@@ -171,4 +194,4 @@ def log_likelihood_FD(self, source, model_func, model_args,
 
 
 functions = [log_likelihood_TD, log_likelihood_TD_ns, log_likelihood_TD_es,
-             log_likelihood_FD]
+             log_likelihood_FD, compute_SNR]
