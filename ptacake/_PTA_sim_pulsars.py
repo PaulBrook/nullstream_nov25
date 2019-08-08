@@ -37,7 +37,7 @@ def _check_empty_pulsars(self, overwrite=False):
             raise ValueError('Already have pulsar data, specify overwrite=True')
 
 def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
-                   overwrite=False):
+                   overwrite=False, seed=None):
     """
     Pick n random pulsars from across the sky.
 
@@ -56,9 +56,15 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         from a distribution weighted by the population of known msps
     overwrite: If true, overwrite already existing pulsars with new ones
         default = False
+    seed: None or int
+        default = None
+        if not None, use np.random.seed(seed) to get repeatable random behaviour
     """
     self._check_empty_pulsars(overwrite=overwrite)
     self._n_pulsars = n
+    
+    if seed is not None:
+        rd.seed(seed)
 
     if uniform:
         # random locations on the sphere

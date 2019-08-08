@@ -60,7 +60,8 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                       min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
-                      gaps=True, exp_gap_spacing=5*YEAR, exp_gap_length=1e7):
+                      gaps=True, exp_gap_spacing=5*YEAR, exp_gap_length=1e7,
+                      seed=None):
     """
     Randomized times from gaussian distributed cadences.
     
@@ -95,7 +96,13 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     exp_gap_length: float or numpy array
         scale for the exponential distribution used to make gap lengths
         default = 1e7 seconds
+    seed: None or int
+        default = None
+        if not None, use np.random.seed(seed) to get repeatable random behaviour
     """
+    if seed is not None:
+        rd.seed(seed)
+    
     ### RANDOMIZED TIMES ###
     # get the number of TOAs for each pulsar
     # note: we don't take t_end to be exact, but just use it to get a number

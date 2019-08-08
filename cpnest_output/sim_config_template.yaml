@@ -21,6 +21,7 @@ pulsar_opts:
     mean_rms: 1.0e-7
     sig_rms: 5.0e-8
     uniform: False
+    seed: null
 
 # if from_file, need to specify file path below
 pulsar_file: ./PTA_files/IPTA_pulsars.
@@ -60,6 +61,7 @@ times_rd_opts:
     gaps: True
     exp_gap_spacing: 157788000.0
     exp_gap_length: 1.0e7
+    seed: null
     
 
 ### signal and noise injection ###

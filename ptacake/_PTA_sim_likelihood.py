@@ -60,12 +60,15 @@ def compute_SNR(self):
     """
     snr2 = 0
     for p in range(self._n_pulsars):
-        # get mask for which times are not nan
+        # get mask for which times are not nan, and select non-nan signal points
         mask = np.isfinite(self._times[p])
         signal = self._signal[p][mask]
+        
+        # compute inner product of signal with itself, wrt noise covariance
         inv_cov = self._TD_inv_covs[p]
         product = np.einsum('i,ij,j', signal, inv_cov, signal)
         snr2 += product
+        
     return np.sqrt(snr2)
     
 
