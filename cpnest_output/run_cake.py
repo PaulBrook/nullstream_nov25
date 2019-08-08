@@ -49,7 +49,7 @@ elif sim_config['pulsar_method'] == 'from_array':
 
 # times stuff
 if sim_config['times_evenly_sampled']:
-    sim.evenly_sampled_times(*sim_config['times_es_opts'])
+    sim.evenly_sampled_times(**sim_config['times_es_opts'])
 else:
     sim.randomized_times(**sim_config['times_rd_opts'])
 
@@ -77,7 +77,7 @@ if run_config['ll_name'] == 'FD_ns':
     
 ### optinal plotting ###
 outdir = run_config['output_path']
-if not os.path.exist(outdir):
+if not os.path.exists(outdir):
     os.mkdir(outdir)
 
 if sim_config['plot_pulsar_map']:
