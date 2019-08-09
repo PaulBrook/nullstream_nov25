@@ -46,7 +46,6 @@ def log_likelihood_TD_es(self, source, model_func, model_args,
         
     return ll
 
-# TODO: is this correct?!?!
 def compute_SNR(self):
     """
     Compute signal to noise ratio of injected signal, assuming

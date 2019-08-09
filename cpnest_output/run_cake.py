@@ -62,6 +62,7 @@ else:
 
 if sim_config['white_noise']:
     sim.white_noise()
+    
 
 ### read run config, prepare for run ###
 
@@ -79,6 +80,11 @@ if run_config['ll_name'] == 'FD_ns':
 outdir = run_config['output_path']
 if not os.path.exists(outdir):
     os.mkdir(outdir)
+    
+# compute and save S/N
+snr = sim.compute_snr()
+with open (join(outdir, 'snr.txt'), 'w') as f:
+    f.write('snr {}\n'.format(snr))
 
 if sim_config['plot_pulsar_map']:
     fig0 = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
