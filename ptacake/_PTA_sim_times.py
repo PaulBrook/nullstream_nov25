@@ -15,7 +15,7 @@ try:
     from jannasutils import isIterable
 except:
     # use hacked excerpt from jannasutils
-    from from_jannasutils import isIterable
+    from .from_jannasutils import isIterable
 
 
 # all times are in seconds (or 1/seconds)

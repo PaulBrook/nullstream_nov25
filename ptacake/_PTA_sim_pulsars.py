@@ -25,7 +25,7 @@ try:
     from jannasutils import radec_location_to_ang
 except:
     # use hacked excerpt from jannasutils
-    from from_jannasutils import radec_location_to_ang
+    from .from_jannasutils import radec_location_to_ang
 
 
 def _check_empty_pulsars(self, overwrite=False):

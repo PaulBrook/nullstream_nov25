@@ -9,3 +9,4 @@ dist/*
 *.pdf
 *.DS_Store
 cpnest_output/*
+venv/*

@@ -46,7 +46,7 @@ def log_likelihood_TD_es(self, source, model_func, model_args,
         
     return ll
 
-def compute_SNR(self):
+def compute_snr(self):
     """
     Compute signal to noise ratio of injected signal, assuming
     noise level specified by pulsar rms values. Computation in the 
@@ -196,4 +196,4 @@ def log_likelihood_FD(self, source, model_func, model_args,
 
 
 functions = [log_likelihood_TD, log_likelihood_TD_ns, log_likelihood_TD_es,
-             log_likelihood_FD, compute_SNR]
+             log_likelihood_FD, compute_snr]
