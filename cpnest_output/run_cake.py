@@ -92,7 +92,7 @@ if sim_config['plot_pulsar_map']:
 if sim_config['plot_residuals_TD']:
     fig1 = sim.plot_residuals()
     fig1.savefig(join(outdir, 'TDresiduals.pdf'))
-if sim_config['plot_residuals_FD']:
+if sim_config['plot_residuals_FD'] and 'FD' in run_config['ll_name']:
     fig2 = sim.plot_residuals_FD()
     fig2.savefig(join(outdir, 'FDresiduals.pdf'))
     

@@ -13,10 +13,11 @@
 ##############################################
 
 ### pulsar options ###
+# specify random, from_file or from_array
+pulsar_method: random
+
+# if random, need to specify options below
 pulsar_opts:
-    # specify random, from_file or from_array
-    how: random
-    # if random, need to specify options below
     num_pulsars: 5
     mean_rms: 1.0e-7
     sig_rms: 5.0e-8
@@ -48,19 +49,19 @@ times_evenly_sampled: False
 # 20 years =  631152000.0
 
 times_es_opts:
-    cadence: 1.0e6
+    cadence: 1.0e+6
     T: 631152000.0
     t_start: 0.0
 
 times_rd_opts:
-    mean_cadence: 1.0e6
-    std_cadence: 1.0e5
-    min_cadence: 1.0e5
+    mean_cadence: 1.0e+6
+    std_cadence: 1.0e+5
+    min_cadence: 1.0e+5
     t_start: 0.0
     t_end: 631152000.0 
     gaps: True
     exp_gap_spacing: 157788000.0
-    exp_gap_length: 1.0e7
+    exp_gap_length: 1.0e+7
     seed: null
     
 
@@ -69,7 +70,7 @@ times_rd_opts:
 # currently only have sinusoid_TD (a GW binary w/o inspiral) implemented
 model_name: sinusoid_TD
 true_source: [0.5, 0.5]
-true_args: [0.5, 1e-14, 0.5, 0.5, 2e-8] # need to match args of chosen model
+true_args: [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8] # need to match args of chosen model
 
 # if True, add white noise according to each pulsar's rms
 white_noise: False
@@ -78,6 +79,7 @@ white_noise: False
 ### plotting options ###
 
 # plots are put in the output file specified in run_config
+plot_pulsar_map: True
 plot_residuals_TD: True
 plot_residuals_FD: True
 
