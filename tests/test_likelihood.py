@@ -75,7 +75,7 @@ class Test_likelihood(unittest.TestCase):
     ### Set plotting to True here if you want this unit test to make plots
     def __init__(self, *args, **kwargs):
         super(Test_likelihood, self).__init__(*args, **kwargs)
-        self.plotting = True
+        self.plotting = False
         self.add_norm = True # only used for plotting (testing always w/o norm)
     
     @classmethod
