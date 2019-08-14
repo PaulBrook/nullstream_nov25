@@ -103,7 +103,7 @@ class Grid_sampler():
         ranges = {}
         for name, bound in zip(self.names, self.bounds):
             r = np.linspace(bound[0], bound[1], num=ngrid)
-            print('param {} with range {}'.format(name, r))
+            print('sampling {} with {} steps between {} and {}'.format(name, ngrid, *bound))
             ranges[name] = r
             
         with open(os.path.join(output, 'grid_interm.txt'), 'a') as interm:
