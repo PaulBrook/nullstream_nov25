@@ -41,6 +41,8 @@ ll_name: FD
 output_path: /home/jgoldstein/Documents/projects/Nullstream/cpnest_output
 
 ### sampler opts ###
+sampler: cpnest # or grid
+
 sampler_opts:
     nlive: 1024
     nsteps: 2000
