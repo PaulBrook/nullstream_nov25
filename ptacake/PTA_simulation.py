@@ -26,16 +26,16 @@ import matplotlib.pyplot as plt
 
 from .nullstream_algebra import null_streams, response_matrix, construct_M
 from . import class_utils
-from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier, 
+from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier,
                _PTA_sim_injections, _PTA_sim_nullstream, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
-#from .harmonics import Kllmm # this gave an error bc there is no Kllmm in the harmonics module
+from .coupling import Kllmm
 
 # add methods from other modules to the main class
-@class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions + 
-                                      _PTA_sim_times.functions + 
-                                      _PTA_sim_injections.functions + 
-                                      _PTA_sim_fourier.functions + 
+@class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions +
+                                      _PTA_sim_times.functions +
+                                      _PTA_sim_injections.functions +
+                                      _PTA_sim_fourier.functions +
                                       _PTA_sim_nullstream.functions +
                                       _PTA_sim_likelihood.functions)
 class PTA_sim:
@@ -65,7 +65,7 @@ class PTA_sim:
     @property
     def residualsFD(self):
         return self._signalFD + self._noiseFD
-    
+
     @property
     def residuals_concat(self):
         return self._signal_concat + self._noise_concat
@@ -96,8 +96,8 @@ class PTA_sim:
 
         return fig, ax
 
-    
-    
+
+
 
 
 #    def log_likelihood_ns_phi_marg(self, source, model_func, model_args, **model_kwargs):

@@ -34,11 +34,20 @@ def inject_stochastic(self, sky):
     """
 
     # find the frequency-domain signal for each pulsar
-    pix = hp.ang2pix(sky._nside, self._pulsars.theta, self._pulsars.phi)
-    f_signal = sky.freq_map.loc[pix]
+    try:
+        pix = hp.ang2pix(sky._nside, self._pulsars.theta, self._pulsars.phi)
+        f_signal = sky.freq_map.loc[pix]
+    except TypeError:
+        raise AttributeError('Must set up pulsars first')
+    except AttributeError:
+        raise AttributeError("'sky' must contain a signal")
 
     # inverse fourier transform
-    self._signal += ift(f_signal, f_signal.columns, self._times)
+    try:
+        self._signal += ift(f_signal, f_signal.columns, self._times)
+    except TypeError:
+        raise  AttributeError('Must set up times first')
+
 
 def white_noise(self):
     """

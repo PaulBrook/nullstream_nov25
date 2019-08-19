@@ -87,7 +87,7 @@ class SkyMap:
         return Sh
 
     def inject_sGWB(self, amplitude=1e-15, index=-13/3,
-                    fmin=3e-9, fmax=1e-7, df=1e-9):
+                    fmin=1e-9, fmax=1e-7, df=1e-9):
         """
         Generate frequency-spectrum maps of the sGWB
         """
