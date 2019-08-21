@@ -25,7 +25,7 @@ model_name: sinusoid_TD
 prior_or_value:
     phase: [0, 6.283185307179586] # do something else for pi? maybe save default ranges somewhere?
     logamp: [-16, -12]
-    pol: [0, 3.141592653589793]
+    pol: [0, 1.5707963267948966]
     cosi: [-1, 1]
     GW_freq: [0, 1.0e-7]
     theta: [0, 3.141592653589793]
