@@ -5,13 +5,12 @@ Created on Tue Aug  6 12:55:14 2019
 
 @author: jgoldstein
 """
-
-import ptacake
-from ptacake.cpnest_stuff import run
 import yaml
 import os
 from os.path import join, isfile
 import argparse
+
+import ptacake
 
 ### command line options for sim and run config ###
 parser = argparse.ArgumentParser("Make a PTA sim, then run cpnest")
@@ -80,6 +79,7 @@ if run_config['ll_name'] == 'FD_ns':
 outdir = run_config['output_path']
 if not os.path.exists(outdir):
     os.mkdir(outdir)
+    print('created dir {}. succes? {}'.format(outdir, os.path.exists(outdir)))
     
 # compute and save S/N
 snr = sim.compute_snr()
@@ -96,9 +96,17 @@ if sim_config['plot_residuals_FD'] and 'FD' in run_config['ll_name']:
     fig2 = sim.plot_residuals_FD()
     fig2.savefig(join(outdir, 'FDresiduals.pdf'))
     
-### run cpnest! ###
+### select sampler and run! ###
     
-run(sim, run_config)
+if run_config['sampler'] == 'cpnest':
+    from ptacake.cpnest_stuff import run
+    
+elif run_config['sampler'] == 'grid':
+    from ptacake.grid_sampler import run
 
+else:
+    raise ValueError('Unknown sampler {}'.format(run_config['sampler']))
+
+run(sim, run_config)
 
     
