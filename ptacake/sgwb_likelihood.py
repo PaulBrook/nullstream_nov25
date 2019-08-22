@@ -15,6 +15,13 @@ from .PTA_simulation import YEAR
 from .coupling import cov_gwb_1fbin
 
 
+#FIXME: rewrite most of this to fit with the PTA_simulation class
+# should precompute & save (as attributes) T, a, Cgw, and Cn.
+# likelihood should be a method
+# add monopole/dipole terms by summing Agw*Cgw + Aeph * Ceph + Aclk * Cclk?
+
+
+# FIXME: make this visible at a higher level (change name?)
 def permute_residuals(npsr, nfreq):
     """"
     Construct a permutation matrix that will reorder timing residuals so that
@@ -68,11 +75,11 @@ def transformation_matrix(psrs, times, freqs, weights=None,
     P = permute_residuals(npsr, nfreq)
 
     # orthogonalized spherical harmonics (block-diagonal matrix)
-    # FIXME: weights?
+    # FIXME: weights?  Normalization seems off as well
     Ynew = new_Y_basis(psrs, lmax=lmax, weights=weights,
                        drop_monopole_dipole=drop_monopole_dipole)
     Ylist = [Ynew.T.values] * nfreq
-    Y = scipy.linalg.block_diag(Ylist)
+    Y = scipy.linalg.block_diag(*Ylist)
 
     # total transformation is the product of all of these
     T = Y @ P @ F
@@ -80,9 +87,12 @@ def transformation_matrix(psrs, times, freqs, weights=None,
     return T
 
 
+# FIXME: actually need inverse covariance matrices and determinants
+
+
 # FIXME: should make a fast version of this for likelihood.
-# Drop the ephemeris/clock errors?
-def cov_sGWB(Agw, freqs, index, psr, Aeph=0, Aclk=0, weights=None,
+# Drop the ephemeris/clock errors and just have Agw as a separate value?
+def cov_sGWB(Agw, psr, freqs, index=-13/3, Aeph=0, Aclk=0, weights=None,
              lmax=2, drop_monopole_dipole=True):
     """
     GW covariance matrix for the frequency-domain orthogonalized harmonic modes.
@@ -95,12 +105,66 @@ def cov_sGWB(Agw, freqs, index, psr, Aeph=0, Aclk=0, weights=None,
     # and have the same covariance matrix up to an amplitude
     covs = []
     for A in Sh:
-        # FIXME: what should A actually be here?
+        # FIXME: what should A be here? Correct normalization, powers?
         covs += [cov_gwb_1fbin(psr=psr, Agw=A, Aeph=Aeph, Aclk=Aclk,
                                weights=weights, lmax=lmax,
                                drop_monopole_dipole=drop_monopole_dipole)]
 
-    cov = scipy.linalg.block_diag(covs)
+    cov = scipy.linalg.block_diag(*covs)
     return cov
 
+# Covariance for standard HD curve
+
+
+def cov_N(psr, T):
+    """
+    Noise covariance matrix.
+
+    Parameters
+    ----------
+    psr: pandas dataframe
+        pulsars. Important info is white noise rms, nTOA
+
+    T: 2d array
+        Transformation matrix from timing residuals to the new modes
+    """
+    # time-domain covariance matrix is a diagonal matrix of sigma^2
+    # Could also use sim._TD_covs (equal to sigma2)
+    sigma2 = np.repeat(psr['rms'].values**2, psr['nTOA'])
+    N = np.diag(sigma2)
+
+    # transform from TOAs to new modes
+    N = T @ N @ np.conj(T.T)
+
+    return N
+
+
+def loglike(Agw, a, Cgw, Cn):
+    """
+    log-likelihood for a stochastic GWB (assumes monopole/dipole are removed)
+    Parameters
+    ----------
+    Agw: float
+        Amplitude of the GWB, eg 1e-15 (should probably log this)
+
+    a: array of length (5 * Nfreq)
+        harmonic frequency residuals, given by T @ r_t, where T is the
+        transformation matrix
+
+    Cgw: 2d array (5 * Nfreq) x (5 * Nfreq)
+        Unnormalized stochastic GWB covariance matrix (ambiguous modes are
+        dropped). Will be normalized by Agw
+
+    Cn: 2d array (5 * Nfreq) x (5 * Nfreq)
+        Noise covariance matrix
+    """
+
+    # FIXME: be smarter here?
+    invcov = np.linalg.inv(Agw**2 * Cgw + Cn)
+    detcov = np.linalg.det(Agw**2 * Cgw + Cn)
+
+    innerproduct = a @ invcov @ a.conj()
+
+    logl = -innerproduct - len(a)*np.log(2*np.pi) - np.log(detcov)
+    return logl
 
