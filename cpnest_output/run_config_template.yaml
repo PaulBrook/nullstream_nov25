@@ -23,9 +23,10 @@ model_name: sinusoid_TD
 # can add log in front of any model parameter (not theta or phi, but we won't need that)
 # it'll be interpreted at log10 of that parameter value
 prior_or_value:
-    phase: [0, 6.283185307179586] # do something else for pi? maybe save default ranges somewhere?
+    phase: [0, 6.283185307179586]
     logamp: [-16, -12]
-    pol: [0, 3.141592653589793]
+    # polarization is only up to pi/4 to avoid paramter degeneracies in sinusoid
+    pol: [0, 1.5707963267948966] 
     cosi: [-1, 1]
     GW_freq: [0, 1.0e-7]
     theta: [0, 3.141592653589793]
@@ -37,10 +38,13 @@ ll_name: FD
 
 
 ### output ####
-# path to output dir, can also be path to file but in either case dir is used
-output_path: /home/jgoldstein/Documents/projects/Nullstream/cpnest_output
+
+# path to output dir
+output_path: ./output
 
 ### sampler opts ###
+sampler: cpnest # or grid
+
 sampler_opts:
     nlive: 1024
     nsteps: 2000
