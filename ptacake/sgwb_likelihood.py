@@ -14,6 +14,10 @@ from .coupling import new_Y_basis
 from .PTA_simulation import YEAR
 from .coupling import cov_gwb_1fbin
 
+#from ptacake.matrix_fourier import fmat
+#from ptacake.coupling import new_Y_basis
+#from ptacake.PTA_simulation import YEAR
+#from ptacake.coupling import cov_gwb_1fbin
 
 #FIXME: rewrite most of this to fit with the PTA_simulation class
 # should precompute & save (as attributes) T, a, Cgw, and Cn.
@@ -78,6 +82,12 @@ def transformation_matrix(psrs, times, freqs, weights=None,
     # FIXME: weights?  Normalization seems off as well
     Ynew = new_Y_basis(psrs, lmax=lmax, weights=weights,
                        drop_monopole_dipole=drop_monopole_dipole)
+
+    # normalization from the integral over the sky position: a = ∫ Y^† r dΩ
+    if weights is None:
+        Ynew *= 4*np.pi/len(psrs)
+    else:
+        Ynew *= 4*np.pi/np.sum(weights)
     Ylist = [Ynew.T.values] * nfreq
     Y = scipy.linalg.block_diag(*Ylist)
 
