@@ -8,21 +8,23 @@ Created on Thu Jun 20 16:43:50 2019
 
 import numpy as np
 import pandas as pd
-import healpy as hp
 
 from .PTA_simulation import YEAR
 #YEAR = 3600*24*365.25
 
-
 from .harmonics import syn_cmplx_map, gw_Cl
+from .matrix_fourier import midpoint_weights
 #from harmonics import syn_cmplx_map, gw_Cl
 
 class SkyMap:
-    def __init__(self):
+    def __init__(self, fmin=1e-9, fmax=1e-7, df=1e-9, nside=32):
 
-        self._nside = 32
-        self._freqs = np.nan  # common set of frequencies for injections
-        # common times for injections/pretty plots *OR* 2d uneven pulsar times
+        self._nside = nside
+
+        # common set of frequencies for injections
+        self._freqs = np.arange(fmin, fmax + df, df)
+
+        # common set of times for plots (or injections?)
         self._times = np.nan
 
         self._sgwbFD = 0
@@ -38,68 +40,124 @@ class SkyMap:
         self._miscTD = 0
 
     @property
-    def freq_map(self):
+    def freq_maps(self):
         return (self._sgwbFD + self._ephemFD + self._clockFD
                 + self._indFD + self._miscFD)
 
     @property
-    def time_map(self):
-        # if they don't exist, should set up times, iMFT freq maps, and save
+    def time_maps(self):
+
+        if np.all(np.isnan(self._times)):
+            # time maps don't exist yet, so get them from the freq maps
+            self.iMFT()
+
         return (self._sgwbTD + self._ephemTD + self._clockTD
                 + self._indTD + self._miscTD)
 
-    def get_residuals(self, psrs, times):
-        # - match thetas, phis in psrs to pixels
-        # - get FD residuals at those pixels
-        # - evaluate iMFT of these residuals
-        # - return residuals as an (Npsr x Ntimes) array
-        # should accept a 2d array of times (one array for each psr)
-        pass
+    @property
+    def freqs(self):
+        return self._freqs
 
-    def MFT(self, tmap, freqs):
-        # perform a matrix fourier transform
-        pass
+    @property
+    def times(self):
+        return self._times
 
-    def iMFT(self, fmap, times):
-        # perform an inverse matrix fourier transform
-        # times is potentially uneven
+    def iMFT(self, overwrite_times=None):
+        """
+        Transform the frequency-domain maps into time-domain maps.
 
-        if times.ndim == 1:
-            # all pulsars have the same times, yay!
-            t, f = np.meshgrid(times, self._freqs)
+        Parameters
+        ----------
+        overwrite_times: array-like
+            Nonstandard times to use. This will overwrite any preset times
+        """
 
-            # FIXME: assuming evenly spaced frequencies here
-            df = np.diff(self._freqs)[0]
-            ftmat = np.exp(2j*np.pi*f*t)*df
-            tmap = pd.DataFrame(np.real(fmap @ ftmat), columns=times)
+        # if not yet defined, set up time bins
+        if overwrite_times is not None:
+            self._times = overwrite_times
+        elif np.all(np.isnan(self._times)):
+            T = 1/self._freqs[0]
+            dt = 0.5/self._freqs[-1]
+            self._times = np.arange(0, T, dt)
 
-            return tmap
-        else:
-            raise NotImplementedError('Can only use a single set of times for now')
+        t, f = np.meshgrid(self._times, self._freqs)
+
+        df = midpoint_weights(self._freqs)
+        df = df.reshape((-1, 1))
+        ftmat = np.exp(2j*np.pi*f*t) * df
+
+        # FIXME: should iFT all fields with FD injections
+        self._sgwbTD = pd.DataFrame(np.real(self._sgwbFD @ ftmat),
+                                    columns=self._times)
+        self._ephemTD = pd.DataFrame(np.real(self._ephemFD @ ftmat),
+                                     columns=self._times)
+        self._clockTD = pd.DataFrame(np.real(self._clockFD @ ftmat),
+                                     columns=self._times)
+        self._miscTD = pd.DataFrame(np.real(self._miscFD @ ftmat),
+                                    columns=self._times)
 
 
     def PSD(self, amplitude=1e-15, index=-13/3):
-        # FIXME: normalization
+        """
+        Generate a power-law PSD. Default is a 'normal' GWB.
+        """
         Sh = amplitude**2 / (12 * np.pi**2) * (self._freqs*YEAR)**index
-        Sh *= YEAR**3
+        Sh *= YEAR**3  # units are s^3: Sh(f) * df
         Sh = pd.Series(Sh, index=self._freqs)
 
         return Sh
 
-    def inject_sGWB(self, amplitude=1e-15, index=-13/3,
-                    fmin=1e-9, fmax=1e-7, df=1e-9):
-        """
-        Generate frequency-spectrum maps of the sGWB
-        """
 
-        # if not yet defined, set up frequency bins
-        if np.all(np.isnan(self._freqs)):
-            self._freqs = np.arange(fmin, fmax + df, df)
+    def add_sGWB(self, amplitude=1e-15, index=-13/3):
+        """
+        Generate frequency-spectrum sGWB maps.
+        """
 
         spec = pd.DataFrame(columns=self._freqs)
+        df = midpoint_weights(self._freqs)
         spec_amp = self.PSD(amplitude=amplitude, index=index) / df
 
         for f in self._freqs:
             spec[f] = gw_Cl() * spec_amp[f]
 
         self._sgwbFD = spec.apply(syn_cmplx_map, args=[self._nside])
+
+
+    def add_correlated_signal(self, PSD, Cl):
+        """
+        Generate an arbitrary angularly-correlated signal
+
+        Parameters:
+        ----------
+        PSD: array-like
+            Frequency power spectrum. Should match the internal frequencies
+
+        Cl: array-like
+            Angular power spectrum. For clock or ephemeris errors, should
+            be zero except for l=0 or l=1
+        """
+
+        if len(PSD) != len(self._freqs):
+            raise ValueError('PSD must match the preset frequencies')
+
+        spec = pd.DataFrame(columns=self._freqs)
+        df = midpoint_weights(self._freqs)
+        spec_amp = pd.Series(PSD/df)
+        spec_amp.index = self._freqs
+
+        for f in self._freqs:
+            # this could definitely be done without the for loop
+            spec[f] = Cl * spec_amp[f]
+
+        # check if this is an injected monopole, dipole, or something else
+        l = Cl[Cl > 0]
+
+        if np.all(l == 0):
+            # monopole injection (clock error)
+            self._clockFD = spec.apply(syn_cmplx_map, args=[self._nside])
+        elif np.all(l == 1):
+            # dipole injection (ephemeris error)
+            self._ephemFD = spec.apply(syn_cmplx_map, args=[self._nside])
+        else:
+            # who the heck knows
+            self._miscFD = spec.apply(syn_cmplx_map, args=[self._nside])

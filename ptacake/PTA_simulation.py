@@ -29,7 +29,7 @@ from . import class_utils
 from . import (_PTA_sim_pulsars, _PTA_sim_times, _PTA_sim_fourier,
                _PTA_sim_injections, _PTA_sim_nullstream, _PTA_sim_likelihood)
 from ._PTA_sim_times import YEAR
-from .coupling import Kllmm
+from .coupling import Kllmm, get_angles
 
 # add methods from other modules to the main class
 @class_utils.add_functions_as_methods(_PTA_sim_pulsars.functions +
@@ -70,6 +70,10 @@ class PTA_sim:
     def residuals_concat(self):
         return self._signal_concat + self._noise_concat
 
+    @property
+    def psr_angles(self):
+        # angles between the different pulsars
+        return get_angles(self._pulsars)
 
     # TODO: move these out of the main module?
     @property

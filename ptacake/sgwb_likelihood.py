@@ -7,17 +7,18 @@ Created on Mon Aug 19 17:16:25 2019
 """
 
 import numpy as np
+import numpy.testing as npt
 import scipy
 
-from .matrix_fourier import fmat
-from .coupling import new_Y_basis
-from .PTA_simulation import YEAR
-from .coupling import cov_gwb_1fbin
+#from .matrix_fourier import fmat, midpoint_weights
+#from .coupling import new_Y_basis
+#from .PTA_simulation import YEAR
+#from .coupling import cov_gwb_1fbin, hellings_downs
 
-#from ptacake.matrix_fourier import fmat
-#from ptacake.coupling import new_Y_basis
-#from ptacake.PTA_simulation import YEAR
-#from ptacake.coupling import cov_gwb_1fbin
+from ptacake.matrix_fourier import fmat, midpoint_weights
+from ptacake.coupling import new_Y_basis
+from ptacake.PTA_simulation import YEAR
+from ptacake.coupling import cov_gwb_1fbin, hellings_downs
 
 #FIXME: rewrite most of this to fit with the PTA_simulation class
 # should precompute & save (as attributes) T, a, Cgw, and Cn.
@@ -110,6 +111,7 @@ def cov_sGWB(Agw, psr, freqs, index=-13/3, Aeph=0, Aclk=0, weights=None,
 
     Sh = Agw**2 / (12 * np.pi**2) * (freqs*YEAR)**index
     Sh *= YEAR**3
+    Sh /= midpoint_weights(freqs)
 
     # covariance bin for each frequency.  Assumes frequencies are independent
     # and have the same covariance matrix up to an amplitude
@@ -171,10 +173,34 @@ def loglike(Agw, a, Cgw, Cn):
 
     # FIXME: be smarter here?
     invcov = np.linalg.inv(Agw**2 * Cgw + Cn)
-    detcov = np.linalg.det(Agw**2 * Cgw + Cn)
+
+    # log determinant (should be safe from overflowing)
+    sign, logdetcov = np.linalg.slogdet(Agw**2 * Cgw + Cn)
+    assert sign > 0, "Determinant is not positive"
 
     innerproduct = a @ invcov @ a.conj()
 
-    logl = -innerproduct - len(a)*np.log(2*np.pi) - np.log(detcov)
-    return logl
+    logl = -innerproduct - len(a)*np.log(2*np.pi) - logdetcov
+
+    npt.assert_almost_equal(np.imag(logl), 0, err_msg='log-likelihood has a '
+                            'nontrivial imaginary component')
+
+    return np.real(logl)
+
+
+def cov_gw_hd(sim, Agw, freqs, index=-13/3):
+    """
+    GW covariance matrix in map space, ordered by frequency
+    """
+    hd = hellings_downs(sim.psr_angles).values
+    Sh = Agw**2 / (12 * np.pi**2) * (freqs*YEAR)**index
+    Sh *= YEAR**3
+    Sh /= midpoint_weights(freqs)
+
+    covs = []
+    for A in Sh:
+        covs += [A*hd]
+
+    cov = scipy.linalg.block_diag(*covs)
+    return cov
 
