@@ -8,6 +8,9 @@ Created on Thu Jun 20 16:43:50 2019
 
 import numpy as np
 import pandas as pd
+import healpy as hp
+import os
+import matplotlib.pyplot as plt
 
 from .PTA_simulation import YEAR
 #YEAR = 3600*24*365.25
@@ -87,14 +90,23 @@ class SkyMap:
         ftmat = np.exp(2j*np.pi*f*t) * df
 
         # FIXME: should iFT all fields with FD injections
-        self._sgwbTD = pd.DataFrame(np.real(self._sgwbFD @ ftmat),
-                                    columns=self._times)
-        self._ephemTD = pd.DataFrame(np.real(self._ephemFD @ ftmat),
-                                     columns=self._times)
-        self._clockTD = pd.DataFrame(np.real(self._clockFD @ ftmat),
-                                     columns=self._times)
-        self._miscTD = pd.DataFrame(np.real(self._miscFD @ ftmat),
-                                    columns=self._times)
+        self._sgwbTD = self._ift_one_field(self._sgwbFD, ftmat)
+        self._clockTD = self._ift_one_field(self._clockFD, ftmat)
+        self._ephemTD = self._ift_one_field(self._ephemFD, ftmat)
+        self._miscTD = self._ift_one_field(self._miscFD, ftmat)
+
+
+    def _ift_one_field(self, field, ftmat):
+        # does the inverse fourier transform matrix multiplication
+        try:
+            tfield = np.real(field @ ftmat)
+            tfield = pd.DataFrame(tfield, columns=self._times)
+        except ValueError:
+            # matrix multiplication can't handle scalars
+            # but that's okay; we know this means that it's empty anyway
+            tfield = 0
+
+        return tfield
 
 
     def PSD(self, amplitude=1e-15, index=-13/3):
@@ -161,3 +173,34 @@ class SkyMap:
         else:
             # who the heck knows
             self._miscFD = spec.apply(syn_cmplx_map, args=[self._nside])
+
+
+    def plot_skymaps(self, filepath, time=True, **kwargs):
+        """
+        Generate plots of the skymaps and save them to the directory given by
+        filepath. Set time to False to generate the frequency maps. Keyword
+        arguments will be passed to healpy.
+        """
+
+        if time:
+            maps = self.time_maps
+            labels = self._times/YEAR
+            unit = 'years'
+        else:
+            maps = self.freq_maps
+            labels = self._freqs
+            unit = 'Hz'
+
+        # set up desired plotting params
+        vmax = np.max(np.abs(np.ravel(maps)))
+        cmap = plt.cm.RdBu_r
+        cmap.set_under('w')
+        hp_kws = dict(max=vmax, min=-vmax, cmap=cmap, format='%.2g',
+                      unit='timing residuals (s)')
+        hp_kws.update(kwargs)  # allow user to make different choices
+
+        for m, l in zip(maps, labels):
+            hp.mollview(maps[m], title='{0:.2g} {1}'.format(l, unit), **hp_kws)
+            filename = '{0:.2g}_{1}.pdf'.format(l, unit)
+            plt.savefig(os.path.join(filepath, filename))
+            plt.close()
