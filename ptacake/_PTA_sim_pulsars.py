@@ -76,10 +76,13 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
     else:
         # draw randomly from weighted set of healpix pixels (see Roebber 2019)
-        if weight_map_dir:
+        if weight_map_dir is not None:
+            print('trying to find msp_weight_map in {}'.format(weight_map_dir))
             f = os.path.join(weight_map_dir, 'msp_weight_map.dat')
+            print('does the path exist? {}'.format(os.path.exists(f)))
             weights = np.loadtxt(f)
         else:
+            print('trying to find msp_weight_map in ptacake package')
             with import_resources.path('ptacake', 'msp_weight_map.dat') as f:
                 weights = np.loadtxt(f)
         npix = np.size(weights)
