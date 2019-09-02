@@ -36,8 +36,8 @@ def _check_empty_pulsars(self, overwrite=False):
         else:
             raise ValueError('Already have pulsar data, specify overwrite=True')
 
-def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True, 
-                   weight_map_dir=None, overwrite=False, seed=None):
+def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
+                   overwrite=False, seed=None):
     """
     Pick n random pulsars from across the sky.
 
@@ -54,9 +54,6 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         default = 0
     uniform: If true, draw pulsars evenly across the sky. Otherwise, choose
         from a distribution weighted by the population of known msps
-    weight_map_dir: None or str (path)
-        If not None, look for 'msp_weight_map.dat' (used for non-uniform pulsars)
-        in this direcotory. Otherwise try to find it in 'ptacake'
     overwrite: If true, overwrite already existing pulsars with new ones
         default = False
     seed: None or int
@@ -76,12 +73,10 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
     else:
         # draw randomly from weighted set of healpix pixels (see Roebber 2019)
-        if weight_map_dir is not None:
-            with import_resources.path(weight_map_dir, 'msp_weight_map.dat') as f:
-                weights = np.loadtxt(f)
-        else:
-            with import_resources.path('ptacake', 'msp_weight_map.dat') as f:
-                weights = np.loadtxt(f)
+        # FIXME find this file with relative path from the package or something?
+        #weights = np.loadtxt('msp_weight_map.dat')
+        with import_resources.path('ptacake', 'msp_weight_map.dat') as f:
+            weights = np.loadtxt(f)
         npix = np.size(weights)
         nside = hp.npix2nside(npix)
         pix = np.random.choice(npix, n, replace=False, p=weights)
