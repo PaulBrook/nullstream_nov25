@@ -220,3 +220,6 @@ def real_Ylm(l, m, theta, phi):
     Y_r = norm * np.where(m < 0, np.imag(Y_c), np.real(Y_c))
 
     return Y_r
+
+
+# add map-space angle calculations + HD

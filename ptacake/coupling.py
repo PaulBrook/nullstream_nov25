@@ -11,6 +11,7 @@ based on the coupling.
 
 import numpy as np
 import pandas as pd
+import healpy as hp
 
 from scipy.special import sph_harm
 from .harmonics import real_Ylm, gw_Cl
@@ -150,7 +151,7 @@ def new_Y_basis(psr, lmax=2, drop_monopole_dipole=True, pix=None, real=True,
 # where C_N is a diagonal matrix of σ^2
 
 def cov_gwb_1fbin(psr, Agw, Aeph=0, Aclk=0, weights=None, lmax=2, real=True,
-                  drop_monopole_dipole=False):
+                  drop_monopole_dipole=True):
     """
     Calculate the expected covariance matrix for the new modes given a set of
     pulsars psr (with optional weights), GW power spectrum with amplitude Agw,
@@ -173,6 +174,7 @@ def cov_gwb_1fbin(psr, Agw, Aeph=0, Aclk=0, weights=None, lmax=2, real=True,
     if drop_monopole_dipole:
         Cl = Cl[4:]
     else:
+        # NOTE: this zero means that the full covariance matrix is singular
         # FIXME: renormalize other l=1 modes?
         Cl[2] = 0  # no power in l=1, m=0 mode
     Cl = np.diagflat(Cl)
@@ -187,3 +189,60 @@ def cov_gwb_1fbin(psr, Agw, Aeph=0, Aclk=0, weights=None, lmax=2, real=True,
     cov = np.conj(L).T @ Cl @ L
 
     return cov
+
+def get_angles(psr, stack=False, drop_extra=False):
+    """
+    Get the angle on the sky in radians between all pairs of pulsars.
+    Returns a dataframe in the same format as that produced by pd.corr().
+    if stack=True and drop_extra=True, then it will return a series with
+    all unique combinations of different pulsars
+    """
+
+    # cartesian vectors for each pulsar location, set up for merge
+    pvecs = hp.ang2vec(psr['theta'], psr['phi'])
+    pvecs = pd.DataFrame(pvecs, index=psr.index, columns=['x', 'y', 'z'])
+    pvecs.index.name = 'psr'
+    pvecs.reset_index(inplace=True)
+    pvecs.index = np.zeros(len(pvecs))
+
+    # get the cartesian product of pvecs (good day for descartes)
+    cart_prod = pd.merge(pvecs, pvecs, left_index=True, right_index=True,
+                         suffixes=['1', '2'])
+    cart_prod.set_index(['psr1', 'psr2'], inplace=True)
+    cart_prod.columns = pd.MultiIndex.from_product([['psr1', 'psr2'],
+                                                    ['x', 'y', 'z']])
+    # get angles from dot product of vectors
+    angles = (cart_prod['psr1']*cart_prod['psr2']).sum(axis=1)
+
+    # numerical errors of ~1e-16 give problems on the diagonal
+    angles = np.arccos(angles.round(15)).unstack()
+    angles.index.name = 'psr1'
+    angles.columns.name = 'psr2'
+
+    if drop_extra:
+        upper_triangle_indices = np.tril_indices_from(angles, 0)
+        angles.values[upper_triangle_indices] = np.nan
+
+    if stack:
+        angles = angles.stack()
+
+    return angles
+
+
+def hellings_downs(angles, amplitude=0.5):
+    """
+    Returns the theoretical Hellings & Downs curve for angular separation xi.
+    Default amplitude is the standard one.
+    """
+    # don't need the warning for angle 0
+    with np.errstate(divide='ignore'):
+        shift_mu = 0.5*(1 - np.cos(angles))
+        hd = 1. + shift_mu*(3*np.log(shift_mu) - 0.5)
+
+        # deal with zeros (delta function bit)
+        hd[angles == 0] = 2
+
+        # scale. Peak value at 0 + ε will be given by amplitude
+        hd *= amplitude
+
+    return hd
