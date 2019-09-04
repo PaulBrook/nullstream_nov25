@@ -22,6 +22,7 @@ pulsar_opts:
     mean_rms: 1.0e-7
     sig_rms: 5.0e-8
     uniform: False
+    weight_map_dir: null # use on cluster, path to dir with mps_weight_map.dat
     seed: null
 
 # if from_file, need to specify file path below
