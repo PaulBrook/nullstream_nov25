@@ -87,7 +87,7 @@ class SkyMap:
 
         df = midpoint_weights(self._freqs)
         df = df.reshape((-1, 1))
-        ftmat = np.exp(2j*np.pi*f*t) * df
+        ftmat = 2 * np.exp(2j*np.pi*f*t) * df
 
         # FIXME: should iFT all fields with FD injections
         self._sgwbTD = self._ift_one_field(self._sgwbFD, ftmat)
@@ -114,7 +114,7 @@ class SkyMap:
         Generate a power-law PSD. Default is a 'normal' GWB.
         """
         Sh = amplitude**2 / (12 * np.pi**2) * (self._freqs*YEAR)**index
-        Sh *= YEAR**3  # units are s^3: Sh(f) * df
+        Sh *= YEAR**3  # units are s^2/Hz
         Sh = pd.Series(Sh, index=self._freqs)
 
         return Sh
@@ -128,10 +128,12 @@ class SkyMap:
         spec = pd.DataFrame(columns=self._freqs)
         df = midpoint_weights(self._freqs)
         spec_amp = self.PSD(amplitude=amplitude, index=index) / df
+        #spec_amp = self.PSD(amplitude=amplitude, index=index)
 
         for f in self._freqs:
-            spec[f] = gw_Cl() * spec_amp[f]
+            spec[f] = 2 * gw_Cl() * spec_amp[f]
 
+        # units are s/Hz
         self._sgwbFD = spec.apply(syn_cmplx_map, args=[self._nside])
 
 
@@ -185,22 +187,29 @@ class SkyMap:
         if time:
             maps = self.time_maps
             labels = self._times/YEAR
-            unit = 'years'
+            label_unit = 'years'
+            default_cmap = plt.cm.RdBu_r
+            default_cmap.set_under('w')
+            default_vmax = np.max(np.abs(np.ravel(maps)))
+            default_vmin = -default_vmax
+            default_unit = 'timing residuals (s)'
         else:
-            maps = self.freq_maps
-            labels = self._freqs
-            unit = 'Hz'
+            maps = np.abs(self.freq_maps)
+            labels = self._freqs * 1e9
+            label_unit = 'nHz'
+            default_cmap = plt.cm.Reds
+            default_cmap.set_under('w')
+            default_vmax = None
+            default_vmin = 0
+            default_unit = ''
 
-        # set up desired plotting params
-        vmax = np.max(np.abs(np.ravel(maps)))
-        cmap = plt.cm.RdBu_r
-        cmap.set_under('w')
-        hp_kws = dict(max=vmax, min=-vmax, cmap=cmap, format='%.2g',
-                      unit='timing residuals (s)')
-        hp_kws.update(kwargs)  # allow user to make different choices
+        # set up default plotting params & make user-specified adjustments
+        hp_kws = dict(max=default_vmax, min=default_vmin, cmap=default_cmap,
+                      format='%.2g', unit=default_unit)
+        hp_kws.update(kwargs)
 
         for m, l in zip(maps, labels):
-            hp.mollview(maps[m], title='{0:.2g} {1}'.format(l, unit), **hp_kws)
-            filename = '{0:.2g}_{1}.pdf'.format(l, unit)
+            hp.mollview(maps[m], title='{0:.2g} {1}'.format(l, label_unit), **hp_kws)
+            filename = '{0:.2g}_{1}.pdf'.format(l, label_unit)
             plt.savefig(os.path.join(filepath, filename))
             plt.close()

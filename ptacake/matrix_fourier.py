@@ -74,7 +74,8 @@ def ifmat(freqs, times):
     for t in times:
         t = flatten(t)
         F, T = np.meshgrid(freqs, t)
-        blocks += [np.exp(2j*np.pi*F*T) * df]
+        # extra factor of 2 to compensate for missing negative frequencies
+        blocks += [2 * np.exp(2j*np.pi*F*T) * df]
 
     # assemble complete block-diagonal matrix
     mat = la.block_diag(*blocks)
