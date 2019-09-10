@@ -11,14 +11,15 @@ import numpy.random as rd
 from ptacake import PTA_sim, YEAR
 
 
-def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
+def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False,
+                         Dt=2.0e6, T=15*YEAR):
     """
     Setup an example sim with evenly sampled times and a sinusoid signal, no noise.
-    
+
     Note: simulation parameters such as cadence and GW params are already chosen.
     Edit the code or add keyword params if you want to change these. You can change
     the number of pulsars with the keyword param n_pulsars.
-    
+
     Parameters
     ----------
     n_pulsars: int
@@ -30,7 +31,7 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
     default_signal: bool
         if True, also inject some standard sinusoid signal
         default = False
-        
+
     Returns
     -------
     PTA_sim
@@ -38,19 +39,17 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
     """
     if seed is not None:
         rd.seed(seed)
-        
+
     ## set up PTA sim with 5 random pulsars with some varying noise levels
     sim = PTA_sim()
     sim.random_pulsars(n_pulsars, sig_rms=5e-8)
-    
-    Dt = 2.0e6
-    T = 15*YEAR
+
     t_start = 0
     sim.evenly_sampled_times(cadence=Dt, T=T, t_start=t_start)
-    
+
     #finite_times = sim._times[np.isfinite(sim._times)]
     #t_end = np.max(finite_times)
-    
+
     if default_signal:
         ## make a test sinusoidal signal
         from ptacake.GW_models import sinusoid_TD
@@ -59,5 +58,5 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False):
         # choose source (theta, phi) coordinates
         source = (0.8*np.pi, 1.3*np.pi)
         sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
-    
+
     return sim

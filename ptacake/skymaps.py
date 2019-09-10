@@ -81,7 +81,7 @@ class SkyMap:
         elif np.all(np.isnan(self._times)):
             T = 1/self._freqs[0]
             dt = 0.5/self._freqs[-1]
-            self._times = np.arange(0, T, dt)
+            self._times = np.arange(0, T + 0.1*dt, dt)
 
         t, f = np.meshgrid(self._times, self._freqs)
 

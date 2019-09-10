@@ -13,6 +13,7 @@ import healpy as hp
 from .nullstream_algebra import response_matrix
 from .matrix_fourier import ift
 
+
 def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
     """
     Inject signal into the residuals.
@@ -24,6 +25,7 @@ def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
 
     # add to current signal in case we want multiple injections done
     self._signal += Fplus * hplus + Fcross * hcross
+
 
 def inject_stochastic(self, sky):
     """
@@ -48,7 +50,6 @@ def inject_stochastic(self, sky):
             raise AttributeError('Pulsars have not been set up') from err
         else:
             raise err
-
 
     # inverse fourier transform
     try:
@@ -76,6 +77,7 @@ def white_noise(self):
 
     assert(self._noise.shape == self._times.shape)
 
+
 def plot_residuals(self, draw_signal=True):
     """
     Plot times vs residuals for all pulsars
@@ -87,6 +89,6 @@ def plot_residuals(self, draw_signal=True):
     ax.plot(self._times.T, self.residuals.T, ls='none', marker='.', markersize=2)
     ax.set_xlabel('time (s)')
     ax.set_ylabel('residuals (s)')
-    return fig
+    return fig, ax
 
 functions = [inject_signal, inject_stochastic, white_noise, plot_residuals]
