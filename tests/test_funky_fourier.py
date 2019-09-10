@@ -142,17 +142,20 @@ class Test_funky_fourier(unittest.TestCase):
         npt.assert_allclose(FiF_diag, FiF_norm, err_msg='diag(F @ iF)is not '
                             'proportional to the identity matrix: '
                             'diagonal elements not all equal')
+
+        # FIXME: this is the problem. WHY
         npt.assert_allclose(FiF_off_diag, 0, atol=FiF_norm*1e-10,
                             err_msg='F @ iF has nonzero off-diagonal elements')
 
 
     def test_uneven_fmat_ifmat(self):
-        # check that fmat, ifmat are inverses even for unevenly sampled times
+        # check that F, iF are approximate inverses for unevenly sampled times
         # note: since they're not square matrices, only one combination works
+        # iFF is diagonalish, but there's coupling between adjacent times
 
         sim = PTA_sim()
         sim.random_pulsars(3)
-        sim.randomized_times(mean_cadence=1e6, t_end=2e8) # heavily oversampled
+        sim.randomized_times(mean_cadence=1e6, t_end=2e8, gaps=False)
         Ts = (sim._times[:, -1] - sim._times[:, 0])
         T = np.mean(Ts)
         freqs = np.arange(1/T, 1e-7, 1/T)
