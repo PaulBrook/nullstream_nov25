@@ -12,6 +12,10 @@ For now, you can install the package locally. Go to the git repository, then run
 pip install .
 ```
 Add the option -e if you want the install to be affected by changes you make to the source code (so for development). 
+Or if you want to specify the install directory:
+```bash
+python setup.py install --prefix=/path/to/directory
+```
 
 # testing
 Run unittests from the git repository with:
