@@ -87,7 +87,11 @@ with open (join(outdir, 'snr.txt'), 'w') as f:
     f.write('snr {}\n'.format(snr))
 
 if sim_config['plot_pulsar_map']:
-    fig0 = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
+    fig0_maybelist = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
+    try:
+        fig0 = fig0_maybelist[0]
+    except:
+        fig0 = fig0_maybelist
     fig0.savefig(join(outdir, 'pulsar_map.pdf'))
 if sim_config['plot_residuals_TD']:
     fig1 = sim.plot_residuals()
