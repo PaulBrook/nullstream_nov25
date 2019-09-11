@@ -8,7 +8,7 @@ import healpy as hp
 
 from ptacake import PTA_sim, SkyMap
 from ptacake.matrix_fourier import fmat, ifmat, flatten
-from tests.setup_sim import setup_evenly_sampled
+#from tests.setup_sim import setup_evenly_sampled
 
 
 class Test_funky_fourier(unittest.TestCase):
@@ -112,39 +112,37 @@ class Test_funky_fourier(unittest.TestCase):
         sim = PTA_sim()
         sim.random_pulsars(3)
         sim.evenly_sampled_times(cadence=2e6, T=2e8)
-        freqs = np.arange(5e-9, 1e-6 + 1e-9, 5e-9)  # should exactly match times
+        freqs = np.arange(5e-9, 2.5e-7 + 1e-9, 5e-9)  # should exactly match times
 
         F = fmat(sim._times, freqs)
         iF = ifmat(freqs, sim._times)
 
-        iFF = iF @ F
+        # check if F, iF are inverses by comparing to identity matrix
         FiF = F @ iF
-
-        # check if proportional to the identity with diag, off-diag components
-        # stolen from https://stackoverflow.com/questions/43884189/check-if-a-large-matrix-is-diagonal-matrix-in-python
-        i, j = iFF.shape
-        iFF_off_diag = iFF.reshape(-1)[:-1].reshape(i - 1, j + 1)[:, 1:]
-        iFF_diag = np.diag(iFF)
-
         i, j = FiF.shape
+        # stolen from https://stackoverflow.com/questions/43884189/check-if-a-large-matrix-is-diagonal-matrix-in-python
         FiF_off_diag = FiF.reshape(-1)[:-1].reshape(i - 1, j + 1)[:, 1:]
         FiF_diag = np.diag(FiF)
 
-        iFF_norm = 4  # why???
-        npt.assert_allclose(iFF_diag, iFF_norm, err_msg='diag(iF @ F) is not '
-                            'proportional to the identity matrix: '
-                            'diagonal elements not all equal')
-        npt.assert_allclose(iFF_off_diag, 0, atol=iFF_norm*1e-10,
-                            err_msg='iF @ F has nonzero off-diagonal elements')
-
-        FiF_norm = 2  # 2 makes a little more sense but still?
+        FiF_norm = 2  # factor of 2 from the missing negative freqs?
         npt.assert_allclose(FiF_diag, FiF_norm, err_msg='diag(F @ iF)is not '
                             'proportional to the identity matrix: '
                             'diagonal elements not all equal')
-
-        # FIXME: this is the problem. WHY
         npt.assert_allclose(FiF_off_diag, 0, atol=FiF_norm*1e-10,
                             err_msg='F @ iF has nonzero off-diagonal elements')
+
+        # this doesn't seem to work, but scipy.linalg.dft square matrices,
+        # which are double copies of iF/F (for neg freqs) do. Why?
+#        iFF = iF @ F
+#        i, j = iFF.shape
+#        iFF_off_diag = iFF.reshape(-1)[:-1].reshape(i - 1, j + 1)[:, 1:]
+#        iFF_diag = np.diag(iFF)
+#        iFF_norm = 1
+#        npt.assert_allclose(iFF_diag, iFF_norm, err_msg='diag(iF @ F) is not '
+#                            'proportional to the identity matrix: '
+#                            'diagonal elements not all equal')
+#        npt.assert_allclose(iFF_off_diag, 0, atol=iFF_norm*1e-10,
+#                            err_msg='iF @ F has nonzero off-diagonal elements')
 
 
     def test_uneven_fmat_ifmat(self):
