@@ -62,16 +62,18 @@ def _ns_covariance(self, small_ns_mat):
 #    
 #        Zinv[A, B] = element
     
-    # compute determinant of the ns covariance matrix
-    #(about two times faster than method below)
-    sign, log_det_ns_mat = la.slogdet(small_ns_mat)
-    log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
-    
-#    # compute deterimant from det(Zinv)
-#    sign, log_det_Zinv = la.slogdet(Zinv)
-#    log_det_Z = -log_det_Zinv
+# for the normalization, we should use the covariance matrix WITHOUT the null-stream 
+# so we don't need this computation below
+#    # compute determinant of the ns covariance matrix
+#    #(about two times faster than method below)
+#    sign, log_det_ns_mat = la.slogdet(small_ns_mat)
+#    log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
+#    
+##    # compute deterimant from det(Zinv)
+##    sign, log_det_Zinv = la.slogdet(Zinv)
+##    log_det_Z = -log_det_Zinv
 
-    return big_ns_mat, Zinv, log_det_Z
+    return big_ns_mat, Zinv
 
 
 def log_likelihood_FD_ns(self, source, model_func, model_args, 
@@ -86,8 +88,8 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     pulsar_array = self._pulsars[['theta', 'phi']].values
     ns_mat = construct_M(*source, pulsar_array) # the "small" ns matrix
     
-    # get big (concatenated) ns matrix, ns covariance invserve and its determinant
-    big_ns_mat, inv_ns_cov, log_det_ns_cov = self._ns_covariance(ns_mat)
+    # get big (concatenated) ns matrix and ns covariance invserve
+    big_ns_mat, inv_ns_cov = self._ns_covariance(ns_mat)
     
     # make null-streams out of concatenated residuals
     # @ does matrix multiplication
@@ -103,8 +105,11 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     x = null_streams - ns_model
     # we think there should be a factor of 2 here to compensate for missing negative frequencies
     ll = -0.5 * 2 * (np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
+    
     # no 0.5 in norm because complex quantity
-    norm = N*P*np.log(2*np.pi) - log_det_ns_cov
+    # for norm, use the inv_cov WITHOUT null-stream transformation
+    sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
+    norm = N*P*np.log(2*np.pi) - log_det_inv_cov
     
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
