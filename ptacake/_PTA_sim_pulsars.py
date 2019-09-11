@@ -65,7 +65,7 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     """
     self._check_empty_pulsars(overwrite=overwrite)
     self._n_pulsars = n
-    
+
     if seed is not None:
         rd.seed(seed)
 
@@ -76,7 +76,7 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         self._pulsars['phi'] = random_ab[:, 1] * 2 * np.pi
     else:
         # draw randomly from weighted set of healpix pixels (see Roebber 2019)
-        
+
         # Try to find msp_weight_map in iven weight_map_dir
         if weight_map_dir is not None:
             f = os.path.join(weight_map_dir, 'msp_weight_map.dat')
@@ -164,15 +164,15 @@ def plot_pulsar_map(self, plot_point=None):
     Optional plot_point = (theta, phi) plots this points as a cross on the map.
     """
     zero_map = np.zeros(hp.nside2npix(1))
-    hp.mollview(zero_map, title='{} pulsar PTA'.format(len(self._pulsars)))
+    hp.mollview(zero_map, title='{}-pulsar PTA'.format(len(self._pulsars)))
 
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
     if plot_point is not None    :
         hp.projplot(*plot_point, marker='+', c='w', ms=10)
-    
-    return plt.gcf()
+
+    return plt.gcf(), plt.gca()
 
 
 # functions we want to add as methods to the main PTA_sim class
