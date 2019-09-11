@@ -144,8 +144,9 @@ def log_likelihood_TD_ns(self, source, model_func, model_args,
     product = np.einsum('i...,ik,k...', x, ns_inv_cov, x)
     ll = -0.5 * np.sum(product) # sum over times
     
+    # for normalisation, use the inv_cov WITHOUT null-stream transformation
     # use log(det(cov)) = -log(det(inv_cov))
-    sign, logdet = np.linalg.slogdet(ns_inv_cov)
+    sign, logdet = np.linalg.slogdet(inv_cov)
     norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
 
     if return_only_norm:
