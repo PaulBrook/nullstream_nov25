@@ -12,6 +12,41 @@ Test to see if doing the funky fourier transforms in a separate module
 import numpy as np
 import scipy.linalg as la
 
+# FIXME: make this visible at a higher level (change name?)
+def permute_residuals(npsr, nfreq):
+    """"
+    Construct a permutation matrix that will reorder timing residuals so that
+    they are ordered by frequency rather than by pulsar. NOTE: all pulsars
+    must have the same number of frequencies
+
+    Parameters
+    ----------
+    npsr: int
+        number of pulsars
+
+    nfreq: int
+        number of frequencies
+
+    Returns
+    -------
+    P: array of size (npsr*nfreq) x (npsr*nfreq)
+        permutation matrix to apply to residuals, eg P @ rf
+    """
+
+    # pulsar and frequency indices
+    p, f = np.meshgrid(np.arange(npsr), np.arange(nfreq))
+
+    # initial and final locations for each value
+    # nb these are 2d arrays, but it doesn't seem to be a problem for indexing
+    start = nfreq*p + f
+    end = npsr*f + p
+
+    # matrix should be 1 at index (desired, current) and zero elsewhere
+    P = np.zeros((npsr*nfreq, npsr*nfreq))
+    P[end, start] = 1
+
+    return P
+
 
 def ift(values, freqs, times):
     """
@@ -74,7 +109,8 @@ def ifmat(freqs, times):
     for t in times:
         t = flatten(t)
         F, T = np.meshgrid(freqs, t)
-        blocks += [np.exp(2j*np.pi*F*T) * df]
+        # extra factor of 2 to compensate for missing negative frequencies
+        blocks += [2 * np.exp(2j*np.pi*F*T) * df]
 
     # assemble complete block-diagonal matrix
     mat = la.block_diag(*blocks)
