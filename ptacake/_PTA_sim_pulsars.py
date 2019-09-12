@@ -162,6 +162,10 @@ def plot_pulsar_map(self, plot_point=None):
     """
     Plot map of the pulsars. Bigger pulsars have lower residuals rms.
     Optional plot_point = (theta, phi) plots this points as a cross on the map.
+    
+    Returns
+    -------
+    (fig, ax) matplotlib figure and axis objects
     """
     zero_map = np.zeros(hp.nside2npix(1))
     hp.mollview(zero_map, title='{}-pulsar PTA'.format(len(self._pulsars)))

@@ -81,6 +81,10 @@ def white_noise(self):
 def plot_residuals(self, draw_signal=True):
     """
     Plot times vs residuals for all pulsars
+    
+    Returns
+    -------
+    (fig, ax) matplotlib figure and axis objects
     """
     fig, ax = plt.subplots(1)
     if draw_signal:
@@ -89,6 +93,6 @@ def plot_residuals(self, draw_signal=True):
     ax.plot(self._times.T, self.residuals.T, ls='none', marker='.', markersize=2)
     ax.set_xlabel('time (s)')
     ax.set_ylabel('residuals (s)')
-    return fig
+    return fig, ax
 
 functions = [inject_signal, inject_stochastic, white_noise, plot_residuals]

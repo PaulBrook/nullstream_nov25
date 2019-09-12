@@ -87,17 +87,13 @@ with open (join(outdir, 'snr.txt'), 'w') as f:
     f.write('snr {}\n'.format(snr))
 
 if sim_config['plot_pulsar_map']:
-    fig0_maybelist = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
-    try:
-        fig0 = fig0_maybelist[0]
-    except:
-        fig0 = fig0_maybelist
+    fig0, ax0 = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
     fig0.savefig(join(outdir, 'pulsar_map.pdf'))
 if sim_config['plot_residuals_TD']:
-    fig1 = sim.plot_residuals()
+    fig1, ax1 = sim.plot_residuals()
     fig1.savefig(join(outdir, 'TDresiduals.pdf'))
 if sim_config['plot_residuals_FD'] and 'FD' in run_config['ll_name']:
-    fig2 = sim.plot_residuals_FD()
+    fig2, ax2 = sim.plot_residuals_FD()
     fig2.savefig(join(outdir, 'FDresiduals.pdf'))
     
 ### select sampler and run! ###
