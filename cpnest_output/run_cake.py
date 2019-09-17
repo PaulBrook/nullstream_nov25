@@ -86,6 +86,7 @@ snr = sim.compute_snr()
 with open (join(outdir, 'snr.txt'), 'w') as f:
     f.write('snr {}\n'.format(snr))
 
+# plotting and saving plots
 if sim_config['plot_pulsar_map']:
     fig0, ax0 = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
     fig0.savefig(join(outdir, 'pulsar_map.pdf'))
