@@ -161,7 +161,7 @@ class SkyMap:
 
         for f in self._freqs:
             # this could definitely be done without the for loop
-            spec[f] = Cl * spec_amp[f]
+            spec[f] = np.array(Cl) * spec_amp[f]
 
         # check if this is an injected monopole, dipole, or something else
         l = Cl[Cl > 0]
@@ -210,6 +210,6 @@ class SkyMap:
 
         for m, l in zip(maps, labels):
             hp.mollview(maps[m], title='{0:.2g} {1}'.format(l, label_unit), **hp_kws)
-            filename = '{0:.2g}_{1}.pdf'.format(l, label_unit)
+            filename = '{0:.2f}_{1}.pdf'.format(l, label_unit)
             plt.savefig(os.path.join(filepath, filename))
             plt.close()

@@ -8,7 +8,7 @@ import healpy as hp
 
 from ptacake import PTA_sim, SkyMap
 from ptacake.matrix_fourier import fmat, ifmat, flatten
-#from tests.setup_sim import setup_evenly_sampled
+from tests.setup_sim import setup_evenly_sampled
 
 
 class Test_funky_fourier(unittest.TestCase):

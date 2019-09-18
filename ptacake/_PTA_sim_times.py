@@ -29,20 +29,20 @@ def _initiate_zero_residuals(self):
     # numbers of TOAs per pulsar
     self._signal = np.zeros_like(self._times, dtype=float)
     self._noise = np.zeros_like(self._times, dtype=float)
-    
+
     # values where times has a nan (padding to get rectangular arrays) are
     # also set to nan
     padding = np.isnan(self._times)
     self._signal[padding] = np.nan
     self._noise[padding] = np.nan
-    
+
     # save the TD covariance matrix diag(sigma**2), and inverse per pulsar
     num_times = self._pulsars['nTOA'].values
     sigma2 = (self._pulsars['rms'].values)**2
     self._TD_covs = [sigma2[i] * np.eye(num_times[i]) for i in range(self._n_pulsars)]
     self._TD_inv_covs = [np.linalg.inv(cov) for cov in self._TD_covs]
-    
-    
+
+
 def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     """
     Set the same evenly sampled times for all pulsars.
@@ -50,13 +50,13 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
     times = np.arange(t_start, T, cadence)
     self._pulsars['nTOA'] = len(times)
     self._times = np.array((times,)*self._n_pulsars)
-        
+
     # save time span for each pulsar
     self._pulsars['T'] = np.nanmax(self._times, axis=1) - np.nanmin(self._times, axis=1)
 
     # st residuals to zero and correct shape for times
     self._initiate_zero_residuals()
-    
+
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                       min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
@@ -64,12 +64,12 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
                       seed=None):
     """
     Randomized times from gaussian distributed cadences.
-    
+
     Can either have the same times for all pulsars, or be different when
     arrays are passed for the mean cadence etc per pulsar. The second option
     will give different numbers of TOAs per pulsar.
     To keep times a rectangular array, times are padded with nans.
-    
+
     Parameters
     ----------
     mean_cadence: float or numpy array
@@ -83,7 +83,7 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
         default = 1e5 (seconds)
     t_start: float or numpy array
         start time
-        default = 0 
+        default = 0
     t_end: float or numpy array
         (approximate) end time
         default = 20 years
@@ -102,7 +102,7 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     """
     if seed is not None:
         rd.seed(seed)
-    
+
     ### RANDOMIZED TIMES ###
     # get the number of TOAs for each pulsar
     # note: we don't take t_end to be exact, but just use it to get a number
@@ -119,42 +119,44 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     cadences = np.maximum(cadences, min_cadence)
     # had to swap shape above in rd.normal, but we want npulsars x nTOAs
     cadences = cadences.T
-    
+
     # calculate times: start with start time, then cumulatively add cadences
     cadences[:, 0] = t_start
     times = np.cumsum(cadences, axis=1)
 
     # set excess times to nan: variable nTOA, but still rectangular arrays
-    if isIterable(nTOAs):    
+    if isIterable(nTOAs):
         for psr in range(self._n_pulsars):
             times[psr, nTOAs[psr]:] = np.nan
     else:
         times[:, nTOAs:] = np.nan
-      
+
     ### GAPS ###
-    if gaps:    
+    if gaps:
         # poisson dist for generating gaps (get a number of gaps for each pulsar)
         exp_ngaps = obs_time/exp_gap_spacing
         ngaps = rd.poisson(exp_ngaps, self._n_pulsars)
-        
-        # convert exp_gap_length to array if it's a scaler (fills array with values)
+
+        # convert to array if a scaler (fills array with values)
         exp_gap_length = np.broadcast_to(exp_gap_length, self._n_pulsars)
+        obs_time = np.broadcast_to(obs_time, self._n_pulsars)
+        t_start = np.broadcast_to(t_start, self._n_pulsars)
 
         # place gaps
         for psr in range(self._n_pulsars):
-            gap_start_times = rd.random(size=ngaps[psr]) * obs_time + t_start
+            gap_start_times = rd.random(size=ngaps[psr]) * obs_time[psr] + t_start[psr]
             gap_lengths = rd.exponential(scale=exp_gap_length[psr], size=ngaps[psr])
-            
+
             # for each gap, set times within gap to nan
             for gap_start, gap_length in zip(gap_start_times, gap_lengths):
                 in_gap = (times[psr] > gap_start) & (times[psr] < gap_start + gap_length)
                 times[psr, in_gap] = np.nan
 
     self._times = times
-    
+
     # save time span for each pulsar
     self._pulsars['T'] = np.nanmax(self._times, axis=1) - np.nanmin(self._times, axis=1)
-    
+
     # save number of TOAs (not nan)
     self._pulsars['nTOA'] = [np.sum(np.isfinite(t)) for t in self._times]
 
