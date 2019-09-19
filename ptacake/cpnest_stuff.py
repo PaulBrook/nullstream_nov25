@@ -166,12 +166,20 @@ def run(PTA_sim, config):
         outdir = os.path.join(os.environ['TMPDIR'], outdir)
     print('Putting cpnest output in {}'.format(outdir))
     
+    
+    # check if environment variable SLURM_NTASKS exists. If so, use that for nthreads
+    if 'SLURM_NTASKS' in os.environ:
+        nthreads = int(os.environ['SLURM_NTASKS'])
+    # otherwise, use nthreads from config
+    else:
+        nthreads = config['nthreads']
+    
     #Instantiate the sampler
     sampler_opts = config['sampler_opts']
     cpn = cpnest.CPNest(usermodel=mod,
                         nlive=sampler_opts['nlive'],
                         maxmcmc=sampler_opts['nsteps'],
-                        nthreads=sampler_opts['nthreads'],
+                        nthreads=nthreads,
                         verbose=3,
                         output=outdir,
                         resume=sampler_opts['resume'])
