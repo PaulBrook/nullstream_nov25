@@ -159,8 +159,12 @@ def run(PTA_sim, config):
     mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
                       model_func, model_names, model_kwargs)
     
-    # gets directory path whether output_path is a dir of a file
-    file_dir = os.path.dirname(config['output_path'])
+    # get output directory from config
+    outdir = config['output_path']
+    # check if environment variable TMPDIR exists. if so, make parent dir
+    if 'TMPDIR' in os.environ:
+        outdir = os.path.join(os.environ['TMPDIR'], outdir)
+    print('Putting cpnest output in {}'.format(outdir))
     
     #Instantiate the sampler
     sampler_opts = config['sampler_opts']
@@ -169,7 +173,7 @@ def run(PTA_sim, config):
                         maxmcmc=sampler_opts['nsteps'],
                         nthreads=sampler_opts['nthreads'],
                         verbose=3,
-                        output=file_dir,
+                        output=outdir,
                         resume=sampler_opts['resume'])
     
     print('Running CPNest!\n')
