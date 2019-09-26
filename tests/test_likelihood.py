@@ -111,9 +111,9 @@ class Test_likelihood(unittest.TestCase):
         # (so no oversampling for the model times)
         cls.sim._setup_model_fourier(overwrite_times=cls.sim._times[0])
         
-        test_fig1 = cls.sim.plot_residuals()
+        test_fig1, ax1 = cls.sim.plot_residuals()
         test_fig1.savefig('./TD_residuals.pdf')
-        test_fig2 = cls.sim.plot_residuals_FD()
+        test_fig2, ax2 = cls.sim.plot_residuals_FD()
         test_fig2.savefig('./FD_residuals.pdf')
         
         npt.assert_equal(cls.sim._freqs, freqs)
