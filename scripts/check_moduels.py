@@ -84,3 +84,17 @@ try:
     print(six.__version__)
 except:
     print('no six')
+
+try:
+    import cpnest
+    print(cpnest)
+    print(cpnest.__version__)
+except:
+    print('no cpnest')
+
+try:
+    import(yaml)
+    print(yaml)
+    print(yaml.__version__)
+except:
+    print('no yaml')
