@@ -77,6 +77,11 @@ if run_config['ll_name'] == 'FD_ns':
     
 ### optinal plotting ###
 outdir = run_config['output_path']
+# check if environment variable TMPDIR exists. if so, make parent dir of outdir
+if 'TMPDIR' in os.environ:
+    outdir = os.path.join(os.environ['TMPDIR'], outdir)
+print('Putting plot etc output in {}'.format(outdir))
+
 if not os.path.exists(outdir):
     os.mkdir(outdir)
     print('created dir {}. succes? {}'.format(outdir, os.path.exists(outdir)))
