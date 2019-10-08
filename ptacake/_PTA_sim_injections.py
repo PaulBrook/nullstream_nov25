@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import healpy as hp
 
 from .nullstream_algebra import response_matrix
-from .matrix_fourier import ift
+from .matrix_fourier import ift, ifmat, flatten
 
 
 def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
@@ -27,12 +27,15 @@ def inject_signal(self, signal_func, source, *signal_args, **signal_kwargs):
     self._signal += Fplus * hplus + Fcross * hcross
 
 
-def inject_stochastic(self, sky):
+def inject_stochastic(self, sky, pulsar_term=False, random_state=None):
     """
     Inject stochastic correlated signal (eg GWB)
 
     sky: instance of SkyMap
         Frequency-domain angularly-correlated skymaps to inject
+
+    pulsar_term: bool
+        If true, include a random pulsar term from the GWB
     """
 
     # find the frequency-domain signal for each pulsar
@@ -53,12 +56,26 @@ def inject_stochastic(self, sky):
 
     # inverse fourier transform
     try:
-        self._signal += ift(f_signal, f_signal.columns, self._times)
+        mat = ifmat(f_signal.columns, self._times)
+        self._signal += ift(f_signal, f_signal.columns, self._times, mat=mat)
     except TypeError as err:
         if str(err) == "'int' object is not iterable":
             raise  AttributeError('Times have not been set up') from err
         else:
             raise err
+
+    # add pulsar term
+    if pulsar_term:
+        npsr = len(pix)
+        pf_shape = np.shape(f_signal)
+        pf = np.zeros(pf_shape, dtype=np.complex)
+        # choose random gwb amplitudes for each frequency for each pulsar
+        for i, f in enumerate(sky._sgwbFD.columns):
+            random_fs = sky._sgwbFD[f].sample(npsr, random_state=random_state)
+            pf[:, i] = random_fs
+        #random_gw_f = sky._sgwbFD.sample(len(pix))
+        pterm = ift(pf, f_signal.columns, self._times, mat=mat)
+        self._noise += pterm
 
 
 def white_noise(self):
@@ -78,10 +95,10 @@ def white_noise(self):
     assert(self._noise.shape == self._times.shape)
 
 
-def plot_residuals(self, draw_signal=True):
+def plot_residuals(self, draw_signal=True, include_noise=True):
     """
     Plot times vs residuals for all pulsars
-    
+
     Returns
     -------
     (fig, ax) matplotlib figure and axis objects
@@ -90,7 +107,11 @@ def plot_residuals(self, draw_signal=True):
     if draw_signal:
         # plot line through signal only
         ax.plot(self._times.T, self._signal.T, ls='-', linewidth=0.5, alpha=0.7, c='k')
-    ax.plot(self._times.T, self.residuals.T, ls='none', marker='.', markersize=2)
+    if include_noise:
+        residuals = self.residuals
+    else:
+        residuals = self._signal
+    ax.plot(self._times.T, residuals.T, ls='none', marker='.', markersize=2)
     ax.set_xlabel('time (s)')
     ax.set_ylabel('residuals (s)')
     return fig, ax

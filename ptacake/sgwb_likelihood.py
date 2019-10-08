@@ -27,7 +27,7 @@ from ptacake.coupling import cov_gwb_1fbin, hellings_downs
 
 
 def transformation_matrix(psrs, times, freqs, weights=None,
-                          drop_monopole_dipole=True, lmax=2):
+                          drop_monopole_dipole=True, lmax=2, verbose=False):
     """
     Matrix to transform time-domain residuals into frequency-domain orthogonalized
     harmonic modes. Used for transforming residuals & noise covariance matrix
@@ -45,7 +45,7 @@ def transformation_matrix(psrs, times, freqs, weights=None,
 
     # orthogonalized spherical harmonics (block-diagonal matrix)
     # FIXME: weights?  Normalization seems off as well
-    Ynew = new_Y_basis(psrs, lmax=lmax, weights=weights,
+    Ynew = new_Y_basis(psrs, lmax=lmax, weights=weights, verbose=verbose,
                        drop_monopole_dipole=drop_monopole_dipole)
 
     # normalization from the integral over the sky position: a = ∫ Y^† r dΩ

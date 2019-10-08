@@ -158,17 +158,20 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
     self._pulsars['rms'] = 1.0e-6 * PTAdata[:, 4]
 
 
-def plot_pulsar_map(self, plot_point=None):
+def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
     """
     Plot map of the pulsars. Bigger pulsars have lower residuals rms.
     Optional plot_point = (theta, phi) plots this points as a cross on the map.
-    
+
     Returns
     -------
     (fig, ax) matplotlib figure and axis objects
     """
-    zero_map = np.zeros(hp.nside2npix(1))
-    hp.mollview(zero_map, title='{}-pulsar PTA'.format(len(self._pulsars)))
+    if background_map is None:
+        background_map = np.zeros(hp.nside2npix(1))
+
+    hp.mollview(background_map, title='{}-pulsar PTA'.format(len(self._pulsars)),
+                **hp_kwargs)
 
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):

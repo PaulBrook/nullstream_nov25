@@ -48,15 +48,17 @@ def permute_residuals(npsr, nfreq):
     return P
 
 
-def ift(values, freqs, times):
+def ift(values, freqs, times, mat=None):
     """
     inverse fourier transform
     freqs: 1d array of common frequencies
     times: 2d array of desired times
+    mat: optional precomputed inverse fourier matrix
     """
 
     # construct ift matrix
-    mat = ifmat(freqs, times)
+    if mat is None:
+        mat = ifmat(freqs, times)
 
     # matrix transform returns flattened array—need to match it to times
     tvals_flat = np.real(mat @ flatten(np.array(values)))
@@ -171,3 +173,29 @@ def expand(seq, npsr=None):
     arr = np.vstack(expanded)
 
     return arr
+
+
+def expand_like(seq, template):
+    """
+    Use a nan-padded 2d array as a template for expanding an array. Valid for
+    arrays which are not monotonically increasing (ie non-time arrays).
+    """
+
+    # use the template to find how long each segment is
+    mask = ~ np.isnan(template)
+    seg_lengths = np.sum(mask, 1)
+    split_idx = np.cumsum(seg_lengths)[:-1]
+
+    # component of seq for each psr
+    segments = np.split(seq, split_idx)
+
+    # nan-pad and reshape to an (npsr x ntimes) array
+    ntimes = np.max(seg_lengths)
+    assert ntimes == template.shape[1], 'expanded array and template disagree'
+    expanded = [np.pad(s, (0, ntimes - len(s)), 'constant',
+                       constant_values=np.nan) for s in segments]
+
+    expanded = np.vstack(expanded)
+
+    return expanded
+
