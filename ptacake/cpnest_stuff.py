@@ -146,7 +146,7 @@ class cpnest_model(cpnest.model.Model):
     
 
 
-def run(PTA_sim, config):
+def run(PTA_sim, config, outdir='./output'):
     
     if config['model_name'] in ['sinusoid', 'Sinusoid', 'sinusoid_TD', 'Sinusoid_TD']:
         from .GW_models import sinusoid_TD
@@ -158,13 +158,6 @@ def run(PTA_sim, config):
     
     mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
                       model_func, model_names, model_kwargs)
-    
-    # get output directory from config
-    outdir = config['output_path']
-    # check if environment variable TMPDIR exists. if so, make parent dir
-    if 'TMPDIR' in os.environ:
-        outdir = os.path.join(os.environ['TMPDIR'], outdir)
-    print('Putting cpnest output in {}'.format(outdir))
     
     sampler_opts = config['sampler_opts']
     
@@ -184,7 +177,7 @@ def run(PTA_sim, config):
                         output=outdir,
                         resume=sampler_opts['resume'])
     
-    print(cpn.output)
+    print('Putting cpnest output in {}'.format(cpn.output))
     print('Running CPNest!\n')
     cpn.run()
     

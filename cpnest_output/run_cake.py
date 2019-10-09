@@ -75,16 +75,24 @@ if 'FD' in run_config['ll_name']:
 if run_config['ll_name'] == 'FD_ns':
     sim.concatenate_residuals()
     
-### optinal plotting ###
+### get and adjust output path ###
+    
 outdir = run_config['output_path']
 # check if environment variable TMPDIR exists. if so, make parent dir of outdir
 if 'TMPDIR' in os.environ:
-    outdir = os.path.join(os.environ['TMPDIR'], outdir)
+    tmpdir = os.environ['TMPDIR']
+    print('Found TMPDIR (putting output dir within) {}'.format(tmpdir))
+    outdir = os.path.join(tmpdir, outdir)
+    
+# normpath removes excess '/./'
+outdir = os.path.normpath(outdir)
 print('Putting plot etc output in {}'.format(outdir))
 
 if not os.path.exists(outdir):
     os.mkdir(outdir)
     print('created dir {}. succes? {}'.format(outdir, os.path.exists(outdir)))
+    
+### optional plotting/save S/N ###
     
 # compute and save S/N
 snr = sim.compute_snr()
@@ -113,6 +121,7 @@ elif run_config['sampler'] == 'grid':
 else:
     raise ValueError('Unknown sampler {}'.format(run_config['sampler']))
 
-run(sim, run_config)
+# pass outdir
+run(sim, run_config, outdir=outdir)
 
     

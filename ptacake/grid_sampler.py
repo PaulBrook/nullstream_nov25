@@ -96,17 +96,20 @@ class Grid_sampler():
         return ll
         
     
-    def run(self, ngrid=10, output='grid_out', save_interm=False):
+    def run(self, ngrid=10, outdir='./grid_out', save_interm=False):
         """
         Sample log likelihood over a grid.
         """
+        
+        print('Saving grid sampler output in {}'.format(outdir))
+        
         ranges = {}
         for name, bound in zip(self.names, self.bounds):
             r = np.linspace(bound[0], bound[1], num=ngrid)
             print('sampling {} with {} steps between {} and {}'.format(name, ngrid, *bound))
             ranges[name] = r
             
-        with open(os.path.join(output, 'grid_interm.txt'), 'a') as interm:
+        with open(os.path.join(outdir, 'grid_interm.txt'), 'a') as interm:
             param_cols = ('{}\t'*len(self.names)).format(*self.names)
             interm.write('idx\t'+param_cols+'log_like\n')
         
@@ -126,11 +129,11 @@ class Grid_sampler():
                         interm.write('{}\t'.format(point[pname]))
                     interm.write('{}\n'.format(log_likes[idx]))
         
-        np.savez(os.path.join(output, 'grid_log_likelihoods.npz'), 
+        np.savez(os.path.join(outdir, 'grid_log_likelihoods.npz'), 
                  log_likelihoods=log_likes, **ranges)
 
 
-def run(PTA_sim, config):
+def run(PTA_sim, config, outdir='./grid_out'):
     
     if config['model_name'] in ['sinusoid', 'Sinusoid', 'sinusoid_TD', 'Sinusoid_TD']:
         from .GW_models import sinusoid_TD
@@ -142,9 +145,7 @@ def run(PTA_sim, config):
         
     grid_sampler = Grid_sampler(config['prior_or_value'], PTA_sim, config['ll_name'], 
                       model_func, model_names, model_kwargs)
-    
-    file_dir = config['output_path']
-    assert(os.path.exists(file_dir))
+
     sampler_opts = config['sampler_opts']
     
-    grid_sampler.run(ngrid=sampler_opts['nsteps'], output=file_dir, save_interm=sampler_opts['resume'])
+    grid_sampler.run(ngrid=sampler_opts['nsteps'], outdir=outdir, save_interm=sampler_opts['resume'])
