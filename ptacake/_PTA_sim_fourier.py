@@ -213,12 +213,16 @@ def plot_residuals_FD(self, draw_signal=True):
     res = self.residualsFD
     fig, ax = plt.subplots(1)
     for i in range(self._n_pulsars):
+        
         if draw_signal:
-            ax.plot(np.log10(self._freqs), np.log10(abs(self._signalFD[i])), linewidth=0.5, alpha=0.5, c='k')
+            ax.plot(self._freqs, abs(self._signalFD[i]), linewidth=0.5, alpha=0.5, c='k')
 
-        ax.plot(np.log10(self._freqs), np.log10(abs(res[i])), ls='none', marker='.')
-    ax.set_xlabel('log_10( frequency (Hz) )')
-    ax.set_ylabel('log_10( | residualsFD (s^2) | )')
+        ax.plot(self._freqs, abs(res[i]), ls='none', marker='.')
+    
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('frequency (Hz)')
+    ax.set_ylabel('| residualsFD | ($s^2$)')
     return fig, ax
 
 
