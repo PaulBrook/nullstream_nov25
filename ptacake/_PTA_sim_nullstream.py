@@ -109,7 +109,7 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     # no 0.5 in norm because complex quantity
     # for norm, use the inv_cov WITHOUT null-stream transformation
     sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
-    norm = N*P*np.log(2*np.pi) - log_det_inv_cov
+    norm = - N*P*np.log(2*np.pi) + log_det_inv_cov
     
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)

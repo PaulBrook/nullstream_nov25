@@ -104,10 +104,8 @@ def log_likelihood_TD(self, source, model_func, model_args,
         
         # use log(det(cov)) = -log(det(inv_cov))
         sign, logdet_inv_cov = np.linalg.slogdet(inv_cov)
-        logdet_cov = - logdet_inv_cov
-        #print('log( det( cov)): {}'.format(logdet_cov))
-        norm += -num_times*hl2p - 0.5*logdet_cov
-    
+        norm += -num_times*hl2p + 0.5*logdet_inv_cov
+        
     if return_only_norm:
         return norm
     
