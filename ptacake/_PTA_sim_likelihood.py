@@ -11,6 +11,7 @@ import numpy as np
 
 from .nullstream_algebra import null_streams, response_matrix
 
+l2p = np.log(2*np.pi)
 hl2p = 0.5 * np.log(2*np.pi)
 
     
@@ -183,7 +184,8 @@ def log_likelihood_FD(self, source, model_func, model_args,
         
         # use log(det(cov)) = -log(det(inv_cov))
         sign, logdet = np.linalg.slogdet(inv_cov)
-        norm += -self._n_freqs*hl2p + 0.5*logdet
+        # no 1/2 in norm because we have norm for real and for imag part
+        norm += -self._n_freqs*l2p + logdet
         
     if return_only_norm:
         return norm        
