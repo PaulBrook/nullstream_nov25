@@ -79,7 +79,9 @@ def _ns_covariance(self, small_ns_mat):
 def log_likelihood_FD_ns(self, source, model_func, model_args, 
                          add_norm=True, return_only_norm=False, **model_kwargs):
     """
-    FD log likelihood using null-streams
+    FD log likelihood using null-streams (including reconstructed signal streams).
+    Because the null-stream transformation is a linear combination of the data, 
+    this log likelhood is equivalent to the "regular" FD likelihood.
     """
     P = self._n_pulsars
     N = self._n_freqs
@@ -103,8 +105,9 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     
     # compute product of data - model
     x = null_streams - ns_model
-    # we think there should be a factor of 2 here to compensate for missing negative frequencies
-    ll = -0.5 * 2 * (np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
+    # a factor of 2 to compensate for the missing negative frequencies cancels out
+    # the usual factor of 1/2 here
+    ll = -(np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
     
     # no 0.5 in norm because complex quantity
     # for norm, use the inv_cov WITHOUT null-stream transformation
@@ -122,5 +125,38 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     
     return ll
 
+def log_likelihood_FD_onlynull(self, source):
+    """
+    FD log-likelihood using only zero response null-streams. Because we do not 
+    use the reconstructed hplus and hcross streams, this likelihood is independent 
+    from the GW model; the only parameters are the source location coordinates.
+    """
+    P = self._n_pulsars
+    N = self._n_freqs
+    
+    # get the null-stream matric
+    pulsar_array = self._pulsars[['theta', 'phi']].values
+    ns_mat = construct_M(*source, pulsar_array)
+    
+    # get big (concatenated) ns matrix and ns covariance inverse
+    big_ns_mat, inv_ns_cov = self._ns_covariance(ns_mat)
+    
+    # make null-streams out of concatenated residuals
+    # @ does matrix multiplication
+    all_null_streams = big_ns_mat @ self.residuals_concat
+    
+    # cut off the hplus/hcross streams (both have length N)
+    null_streams = all_null_streams[2*N:]
+    # and cut off the equivalent part of the invere covariance matrix
+    inv_ns_cov_cut = inv_ns_cov[2*N:, 2*N:]
+    
+    # the model is all zeroes, so our usual likelihood variable x is null_streams - 0 = null_streams
+    ll = -(np.einsum('i,ij,j', null_streams, inv_ns_cov_cut, np.conj(null_streams)))
+    
+    assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
+    ll = np.real(ll)
+   
+    return ll
 
-functions = [concatenate_residuals, _ns_covariance, log_likelihood_FD_ns]
+
+functions = [concatenate_residuals, _ns_covariance, log_likelihood_FD_ns, log_likelihood_FD_onlynull]
