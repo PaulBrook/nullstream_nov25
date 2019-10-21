@@ -41,11 +41,11 @@ with open(args.run_config, 'r') as f2:
 ### get and adjust output path ###
     
 outdir = run_config['output_path']
-# check if environment variable TMPDIR exists. if so, make parent dir of outdir
-if 'TMPDIR' in os.environ:
+# check if environment variable TMPDIR exists and if run_config option to use
+# it is True. If so, put output dir inside there.
+if 'TMPDIR' in os.environ and run_config['use_tmp']:
     tmpdir = os.environ['TMPDIR']
-    # /tmp seems to randomly be put into TMPDIR on bluebear (avoid it)
-    if os.path.exists(tmpdir) and tmpdir != '/tmp':
+    if os.path.exists(tmpdir):
         print('Found TMPDIR (putting output dir within) {}'.format(tmpdir))
         outdir = join(tmpdir, outdir)
     

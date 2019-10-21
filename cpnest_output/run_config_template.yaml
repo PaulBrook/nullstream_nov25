@@ -41,6 +41,8 @@ ll_name: FD
 
 # path to output dir
 output_path: ./output
+# if True, use TMPDIR environment variable if available
+use_tmp: False
 
 ### sampler opts ###
 sampler: cpnest # or grid
