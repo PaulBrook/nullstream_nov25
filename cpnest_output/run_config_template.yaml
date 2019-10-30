@@ -32,8 +32,9 @@ prior_or_value:
     theta: [0, 3.141592653589793]
     phi: [0, 6.283185307179586]
     
-# which likelihood function to use. We have TD, FD, FD_ns for any data
-# or TD_es, TD_ns only for evenly sampled data (ns = null-stream, es = evenly sampled)
+# which likelihood function to use. We have TD, FD, FD_ns, FD_null for any data
+# note: ns means all null-streams (including first two), null means only "null" null-streams
+# or TD_es, TD_ns only for evenly sampled data (es = evenly sampled)
 ll_name: FD
 
 

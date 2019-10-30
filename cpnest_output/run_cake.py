@@ -105,7 +105,8 @@ except FileNotFoundError:
     # if using FD_ns likelihood, need to run concatenate_residuals also
     if 'FD' in run_config['ll_name']:
         sim.fourier_residuals()
-    if run_config['ll_name'] == 'FD_ns':
+    # null stream likelihoods need concatenated residuals
+    if run_config['ll_name'] in ['FD_ns', 'FD_null']:
         sim.concatenate_residuals()
         
     # save the sim as a pickle in case we resume later

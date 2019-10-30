@@ -22,6 +22,8 @@ parser.add_argument('-r', '--run_config', required=True, dest='run_config',
                     help='config file for CPNest run')
 parser.add_argument('-d', '--cpnest_output_dir', default='./', dest='cpnest_dir',
                     help='directory with output files from CPNest to use')
+parser.add_argument('-o', '--output_dir', default='./output/', dest='out_dir',
+                    help='directory to save plot in')
 args = parser.parse_args()
 
 # check that both config files exist
@@ -86,7 +88,7 @@ labels=dict()
 for param in true_params.keys():
     labels[param] = str(param)
 
-figsave = join(args.cpnest_dir, 'output', 'my_corner.pdf')
+figsave = join(args.out_dir, 'my_corner.pdf')
 
 seaborn_corner(post, true_params, labels, param_names=sampled_params,
                savefile=figsave)
