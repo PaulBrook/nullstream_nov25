@@ -182,13 +182,18 @@ def run(PTA_sim, config, outdir='./output'):
         nthreads = sampler_opts['nthreads']
     
     #Instantiate the sampler
-    cpn = cpnest.CPNest(usermodel=mod,
+    CPNest_args = dict(usermodel=mod,
                         nlive=sampler_opts['nlive'],
                         maxmcmc=sampler_opts['nsteps'],
                         nthreads=nthreads,
                         verbose=3,
                         output=outdir,
                         resume=sampler_opts['resume'])
+    # this only works for cpnest version 0.9.8 (installed from source), so we
+    # don't want to add this keyword argument if it's not needed
+    if sampler_opts['ncheckpoint'] is not None:
+        CPNest_args.update(n_periodic_checkpoint=sampler_opts['ncheckpoint'])
+    cpn = cpnest.CPNest(**CPNest_args)
     
     print('Putting cpnest output in {}'.format(cpn.output))
     print('Running CPNest!\n')

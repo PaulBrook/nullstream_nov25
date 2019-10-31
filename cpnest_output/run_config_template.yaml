@@ -53,3 +53,6 @@ sampler_opts:
     nsteps: 2000
     nthreads: 1
     resume: True
+    # set ncheckpoint to integer N for manual cpnest checkpointing every N steps
+    # only works for cpnest version 0.9.8 (have to install from source)
+    ncheckpoint: null
