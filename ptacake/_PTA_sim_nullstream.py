@@ -9,6 +9,8 @@ from scipy.linalg import block_diag
 from .nullstream_algebra import construct_M
 import matplotlib.pyplot as plt
 
+l2p = np.log(2*np.pi)
+
     
 def concatenate_residuals(self):
     """
@@ -112,7 +114,7 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     # no 0.5 in norm because complex quantity
     # for norm, use the inv_cov WITHOUT null-stream transformation
     sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
-    norm = - N*P*np.log(2*np.pi) + log_det_inv_cov
+    norm = - N*P*l2p + log_det_inv_cov
     
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
@@ -122,10 +124,9 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     
     if add_norm:
         ll += norm
-    
     return ll
 
-def log_likelihood_FD_onlynull(self, source):
+def log_likelihood_FD_onlynull(self, source, add_norm=True, return_only_norm=False):
     """
     FD log-likelihood using only zero response null-streams. Because we do not 
     use the reconstructed hplus and hcross streams, this likelihood is independent 
@@ -139,23 +140,40 @@ def log_likelihood_FD_onlynull(self, source):
     ns_mat = construct_M(*source, pulsar_array)
     
     # get big (concatenated) ns matrix and ns covariance inverse
-    big_ns_mat, inv_ns_cov = self._ns_covariance(ns_mat)
+    # Z = null-stream covariance
+    # bigM = big null-stream matrix
+    bigM, invZ = self._ns_covariance(ns_mat)
     
     # make null-streams out of concatenated residuals
     # @ does matrix multiplication
-    all_null_streams = big_ns_mat @ self.residuals_concat
+    all_null_streams = bigM @ self.residuals_concat
     
     # cut off the hplus/hcross streams (both have length N)
     null_streams = all_null_streams[2*N:]
     # and cut off the equivalent part of the invere covariance matrix
-    inv_ns_cov_cut = inv_ns_cov[2*N:, 2*N:]
+    invZ_cut = invZ[2*N:, 2*N:]
     
     # the model is all zeroes, so our usual likelihood variable x is null_streams - 0 = null_streams
-    ll = -(np.einsum('i,ij,j', null_streams, inv_ns_cov_cut, np.conj(null_streams)))
+    ll = -(np.einsum('i,ij,j', null_streams, invZ_cut, np.conj(null_streams)))
     
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
+    
+    # compute norm
+    norm_part1 = -(P-2)*N*l2p
+    
+    sign, logdet_invZ_cut = la.slogdet(invZ_cut)
+    logdet_Zcut = -logdet_invZ_cut
+    sign, logdet_bigM = la.slogdet(bigM)
+    norm_part2 = logdet_Zcut - 2*logdet_bigM
+    
+    norm = norm_part1 + norm_part2
    
+    if return_only_norm:
+        return norm
+    
+    if add_norm:
+        ll += norm
     return ll
 
 

@@ -12,7 +12,7 @@ from ptacake import PTA_sim, YEAR
 
 
 def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False,
-                         Dt=2.0e6, T=15*YEAR):
+                         Dt=2.0e6, T=15*YEAR, fourier=True, concat=True):
     """
     Setup an example sim with evenly sampled times and a sinusoid signal, no noise.
 
@@ -58,5 +58,10 @@ def setup_evenly_sampled(n_pulsars=5, seed=None, default_signal=False,
         # choose source (theta, phi) coordinates
         source = (0.8*np.pi, 1.3*np.pi)
         sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+
+    if fourier:
+        sim.fourier_residuals()
+    if concat:
+        sim.concatenate_residuals()
 
     return sim
