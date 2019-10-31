@@ -44,7 +44,7 @@ class cpnest_model(cpnest.model.Model):
     """
         
     def __init__(self, prior_or_value, PTA_sim, ll_name, 
-                 model_func, model_names, model_kwargs):
+                 model_func=None, model_names=[], model_kwargs={}):
         """
         prior_or_value: dict
             keys must be all parameter names in model_names, plus 'theta', 'phi'
@@ -65,10 +65,12 @@ class cpnest_model(cpnest.model.Model):
         ll_funcs = {'TD': PTA_sim.log_likelihood_TD,
                     'TD_ns': PTA_sim.log_likelihood_TD_ns,
                     'FD': PTA_sim.log_likelihood_FD,
-                    'FD_ns':PTA_sim.log_likelihood_FD_ns
+                    'FD_ns':PTA_sim.log_likelihood_FD_ns,
+                    #'FD_null':PTA_sim.log_likelihood_FD_onlynull
                     }
         
         # things we need in the log_likelihood function
+        self.ll_name = ll_name
         self.ll_func = ll_funcs[ll_name]
         self.model_func = model_func
         self.model_names = model_names
@@ -134,13 +136,20 @@ class cpnest_model(cpnest.model.Model):
                 self.current_values_nolog.update({key[3:]:10**value})
             else:
                 self.current_values_nolog.update({key:value})
-                
-        # split values into source (theta, phi) and a list of model params 
-        # in the correct order, to pass onto the likelihood function
-        source = [self.current_values['theta'], self.current_values['phi']]
-        model_args = [self.current_values_nolog[p] for p in self.model_names]
-        ll = self.ll_func(source, self.model_func, model_args, add_norm=True, 
-                          return_only_norm=False, **self.model_kwargs)
+            
+        # split off theta and phi parameters from other model parameters
+        source = [self.current_values['theta'], self.current_values['phi']]    
+        
+        # for FD_null likelihood, don't have model and model_args etc
+        if self.ll_name == 'FD_null':
+            ll = self.ll_func(source)
+        
+        else:
+            # get the rest of the model parameters in the correct order
+            # then pass to likelihood function
+            model_args = [self.current_values_nolog[p] for p in self.model_names]
+            ll = self.ll_func(source, self.model_func, model_args, add_norm=True, 
+                              return_only_norm=False, **self.model_kwargs)
 
         return ll
     
@@ -148,16 +157,20 @@ class cpnest_model(cpnest.model.Model):
 
 def run(PTA_sim, config, outdir='./output'):
     
-    if config['model_name'] in ['sinusoid', 'Sinusoid', 'sinusoid_TD', 'Sinusoid_TD']:
-        from .GW_models import sinusoid_TD
-        model_func = sinusoid_TD
-        model_names = ['phase', 'amp', 'pol', 'cosi', 'GW_freq']
-        model_kwargs = {}
-    else:
-        raise NotImplementedError('Other models than GW sinusoid currently not implemented')
+    # for FD_null likelihood, don't need GW model etc
+    if config['ll_name'] == 'FD_null':
+        mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'])
     
-    mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
-                      model_func, model_names, model_kwargs)
+    else:
+        if config['model_name'] in ['sinusoid', 'Sinusoid', 'sinusoid_TD', 'Sinusoid_TD']:
+            from .GW_models import sinusoid_TD
+            model_func = sinusoid_TD
+            model_names = ['phase', 'amp', 'pol', 'cosi', 'GW_freq']
+        else:
+            raise NotImplementedError('Other models than GW sinusoid currently not implemented')
+        
+        mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
+                          model_func=model_func, model_names=model_names)
     
     sampler_opts = config['sampler_opts']
     
@@ -169,13 +182,18 @@ def run(PTA_sim, config, outdir='./output'):
         nthreads = sampler_opts['nthreads']
     
     #Instantiate the sampler
-    cpn = cpnest.CPNest(usermodel=mod,
+    CPNest_args = dict(usermodel=mod,
                         nlive=sampler_opts['nlive'],
                         maxmcmc=sampler_opts['nsteps'],
                         nthreads=nthreads,
                         verbose=3,
                         output=outdir,
                         resume=sampler_opts['resume'])
+    # this only works for cpnest version 0.9.8 (installed from source), so we
+    # don't want to add this keyword argument if it's not needed
+    if sampler_opts['ncheckpoint'] is not None:
+        CPNest_args.update(n_periodic_checkpoint=sampler_opts['ncheckpoint'])
+    cpn = cpnest.CPNest(**CPNest_args)
     
     print('Putting cpnest output in {}'.format(cpn.output))
     print('Running CPNest!\n')
