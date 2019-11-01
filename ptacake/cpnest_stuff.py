@@ -5,6 +5,8 @@ Created on Mon Aug  5 12:49:59 2019
 """
 import numpy as np
 import os
+from os.path import join
+import sys
 
 import cpnest
 import cpnest.model
@@ -66,7 +68,7 @@ class cpnest_model(cpnest.model.Model):
                     'TD_ns': PTA_sim.log_likelihood_TD_ns,
                     'FD': PTA_sim.log_likelihood_FD,
                     'FD_ns':PTA_sim.log_likelihood_FD_ns,
-                    #'FD_null':PTA_sim.log_likelihood_FD_onlynull
+                    'FD_null':PTA_sim.log_likelihood_FD_onlynull
                     }
         
         # things we need in the log_likelihood function
@@ -171,6 +173,18 @@ def run(PTA_sim, config, outdir='./output'):
         
         mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
                           model_func=model_func, model_names=model_names)
+        
+    # save zero likelihood for computation of log bayes factor later
+    # doesn't make sense for null-only likelihood anyway so skip that one
+    if config['ll_name'] != 'FD_null':
+        # assumign sinusoid_TD model
+        #['phase', 'amp', 'pol', 'cosi', 'GW_freq']
+        zero_amp_args = [0, 0, 0, 0.5, 1e-8]
+        zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args, add_norm=True, return_only_norm=False)
+        save_path = join(outdir, 'zero_logl.txt')
+        with open(save_path, 'w') as f:
+            f.write('{}\n'.format(zero_logl)) 
+    
     
     sampler_opts = config['sampler_opts']
     
@@ -202,4 +216,6 @@ def run(PTA_sim, config, outdir='./output'):
     # save the posterior samples
     cpn.get_nested_samples()
     cpn.get_posterior_samples()
+    
+
     

@@ -10,6 +10,7 @@ import numpy as np
 from os.path import join, isfile
 import argparse
 import yaml
+import pickle
 import pandas as pd
 
 from ptacake.plots import seaborn_corner
@@ -22,6 +23,8 @@ parser.add_argument('-r', '--run_config', required=True, dest='run_config',
                     help='config file for CPNest run')
 parser.add_argument('-d', '--cpnest_output_dir', default='./', dest='cpnest_dir',
                     help='directory with output files from CPNest to use')
+parser.add_argument('-o', '--output_dir', default='./output/', dest='out_dir',
+                    help='directory to save plot in')
 args = parser.parse_args()
 
 # check that both config files exist
@@ -86,7 +89,44 @@ labels=dict()
 for param in true_params.keys():
     labels[param] = str(param)
 
-figsave = join(args.cpnest_dir, 'output', 'my_corner.pdf')
+figsave = join(args.out_dir, 'my_corner.pdf')
 
 seaborn_corner(post, true_params, labels, param_names=sampled_params,
                savefile=figsave)
+
+
+### compute log Bayes factor
+
+# read in evidence
+nlive = run_config['sampler_opts']['nlive']
+evidence_path = join(args.cpnest_dir, 'chain_{}_1234.txt_evidence.txt'.format(nlive))
+with open(evidence_path, 'r') as f:
+    lines = f.readlines()
+# log evidence is first number on first (and only) line of evidence.txt file
+log_evidence = float(lines[0].split()[0])
+
+
+# read in log likelihood with zero amplitude
+try:
+    logl_path = join(args.cpnest_dir, 'zero_logl.txt')
+    with open(logl_path, 'r') as f2:
+        lines2 = f2.readlines()
+except FileNotFoundError:
+    try:
+        logl_path = join(args.out_dir, 'zero_logl.txt')
+        with open(logl_path, 'r') as f2:
+            lines2 = f2.readlines()
+    except:
+        print('Could not find zero_logl.txt')
+        
+zero_logl = float(lines2[0].split()[0])
+log_bayes = log_evidence - zero_logl
+save_path = join(args.out_dir, 'log_bayes.txt')
+with open(save_path, 'w') as f3:
+    f3.write('{}\n'.format(log_bayes))
+            
+        
+        
+    
+    
+    
