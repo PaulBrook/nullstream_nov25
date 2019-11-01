@@ -68,7 +68,7 @@ class cpnest_model(cpnest.model.Model):
                     'TD_ns': PTA_sim.log_likelihood_TD_ns,
                     'FD': PTA_sim.log_likelihood_FD,
                     'FD_ns':PTA_sim.log_likelihood_FD_ns,
-                    'FD_null':PTA_sim.log_likelihood_FD_onlynull
+                    #'FD_null':PTA_sim.log_likelihood_FD_onlynull
                     }
         
         # things we need in the log_likelihood function
