@@ -8,6 +8,6 @@ dist/*
 *.png
 *.pdf
 *.DS_Store
-cpnest_output/*
+some_runs_output/*
 venv/*
 *.tar.gz
