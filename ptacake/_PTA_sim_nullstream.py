@@ -45,41 +45,12 @@ def _ns_covariance(self, small_ns_mat):
     
     # compute inv FD ns covariance (Eq. 23)
     Zinv = inv_big_ns_mat.T @ self._inv_big_FD_cov @ inv_big_ns_mat
-    
-#    # zinv by pieces: it's possible this is faster for quite large numbers of P and Nf
-#    # but I couldn't pin down the scaling in some speed tests. I think it's unlikely
-#    # to be faster, so let's leave it for now and perhaps come back if we find we
-#    # are too slow for actual runs
-#
-#    Zinv = np.zeros((P*N, P*N))
-#    for A, B in np.ndindex(Zinv.shape):
-#        k = A//N
-#        alpha = A%N
-#        q = B//N
-#        beta = B%N
-#        
-#        element = 0
-#        for s, inv_sig in enumerate(self._TOA_FD_inv_covs):
-#            element += inv_small_ns_mat[s, k] * inv_sig[alpha, beta] * inv_small_ns_mat[s, q]
-#    
-#        Zinv[A, B] = element
-    
-# for the normalization, we should use the covariance matrix WITHOUT the null-stream 
-# so we don't need this computation below
-#    # compute determinant of the ns covariance matrix
-#    #(about two times faster than method below)
-#    sign, log_det_ns_mat = la.slogdet(small_ns_mat)
-#    log_det_Z = 2*N*log_det_ns_mat + np.sum(self._TOA_FD_cov_logdets)
-#    
-##    # compute deterimant from det(Zinv)
-##    sign, log_det_Zinv = la.slogdet(Zinv)
-##    log_det_Z = -log_det_Zinv
 
     return big_ns_mat, Zinv
 
 
 def log_likelihood_FD_ns(self, source, model_func, model_args, 
-                         add_norm=True, return_only_norm=False, **model_kwargs):
+                         add_norm=False, return_only_norm=False, **model_kwargs):
     """
     FD log likelihood using null-streams (including reconstructed signal streams).
     Because the null-stream transformation is a linear combination of the data, 
@@ -126,7 +97,7 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
         ll += norm
     return ll
 
-def log_likelihood_FD_onlynull(self, source, add_norm=True, return_only_norm=False):
+def log_likelihood_FD_onlynull(self, source, add_norm=False, return_only_norm=False):
     """
     FD log-likelihood using only zero response null-streams. Because we do not 
     use the reconstructed hplus and hcross streams, this likelihood is independent 

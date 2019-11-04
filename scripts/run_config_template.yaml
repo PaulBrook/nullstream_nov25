@@ -36,6 +36,9 @@ prior_or_value:
 # note: ns means all null-streams (including first two), null means only "null" null-streams
 # or TD_es, TD_ns only for evenly sampled data (es = evenly sampled)
 ll_name: FD
+# whether to add normalisation to likelihood where possible
+# note that there isn't a mathematically responsible normalisation for FD_null
+add_norm: False
 
 
 ### output ####

@@ -45,7 +45,7 @@ class cpnest_model(cpnest.model.Model):
 
     """
         
-    def __init__(self, prior_or_value, PTA_sim, ll_name, 
+    def __init__(self, prior_or_value, PTA_sim, ll_name, add_norm,
                  model_func=None, model_names=[], model_kwargs={}):
         """
         prior_or_value: dict
@@ -56,6 +56,8 @@ class cpnest_model(cpnest.model.Model):
         PTA_sim: PTA_sim object
         ll_name: str 
             one of {'TD', 'TD_ns', 'FD', 'FD_ns'}
+        add_norm: bool
+            if True, call likelihood with add_norm=True (False otherwise)
         model_func: python function 
             (e.g. sinusoid_TD)
         model_names: list of str
@@ -74,6 +76,7 @@ class cpnest_model(cpnest.model.Model):
         # things we need in the log_likelihood function
         self.ll_name = ll_name
         self.ll_func = ll_funcs[ll_name]
+        self.add_norm = add_norm
         self.model_func = model_func
         self.model_names = model_names
         self.model_kwargs = model_kwargs
@@ -150,8 +153,9 @@ class cpnest_model(cpnest.model.Model):
             # get the rest of the model parameters in the correct order
             # then pass to likelihood function
             model_args = [self.current_values_nolog[p] for p in self.model_names]
-            ll = self.ll_func(source, self.model_func, model_args, add_norm=True, 
-                              return_only_norm=False, **self.model_kwargs)
+            ll = self.ll_func(source, self.model_func, model_args, 
+                              add_norm=self.add_norm, return_only_norm=False, 
+                              **self.model_kwargs)
 
         return ll
     
@@ -161,7 +165,8 @@ def run(PTA_sim, config, outdir='./output'):
     
     # for FD_null likelihood, don't need GW model etc
     if config['ll_name'] == 'FD_null':
-        mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'])
+        mod = cpnest_model(config['prior_or_value'], PTA_sim, 
+                           config['ll_name'], config['add_norm'])
     
     else:
         if config['model_name'] in ['sinusoid', 'Sinusoid', 'sinusoid_TD', 'Sinusoid_TD']:
@@ -172,7 +177,8 @@ def run(PTA_sim, config, outdir='./output'):
             raise NotImplementedError('Other models than GW sinusoid currently not implemented')
         
         mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
-                          model_func=model_func, model_names=model_names)
+                           config['add_norm'], model_func=model_func, 
+                           model_names=model_names)
         
     # save zero likelihood for computation of log bayes factor later
     # doesn't make sense for null-only likelihood anyway so skip that one
@@ -180,7 +186,8 @@ def run(PTA_sim, config, outdir='./output'):
         # assumign sinusoid_TD model
         #['phase', 'amp', 'pol', 'cosi', 'GW_freq']
         zero_amp_args = [0, 0, 0, 0.5, 1e-8]
-        zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args, add_norm=True, return_only_norm=False)
+        zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args, 
+                                add_norm=config['add_norm'], return_only_norm=False)
         save_path = join(outdir, 'zero_logl.txt')
         with open(save_path, 'w') as f:
             f.write('{}\n'.format(zero_logl)) 

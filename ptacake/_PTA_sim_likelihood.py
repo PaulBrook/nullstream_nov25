@@ -16,7 +16,7 @@ hl2p = 0.5 * np.log(2*np.pi)
 
     
 def log_likelihood_TD_es(self, source, model_func, model_args, 
-                         add_norm=True, return_only_norm=False, **model_kwargs):
+                         add_norm=False, return_only_norm=False, **model_kwargs):
     """
     Time domain log likelihood, only for evenly sampled data.
     """
@@ -117,7 +117,7 @@ def log_likelihood_TD(self, source, model_func, model_args,
     
 
 def log_likelihood_TD_ns(self, source, model_func, model_args, 
-                         add_norm=True, return_only_norm=False, **model_kwargs):
+                         add_norm=False, return_only_norm=False, **model_kwargs):
     """
     Time domain null-stream likelihood only possible for evenly sampled times.
     """
@@ -158,7 +158,7 @@ def log_likelihood_TD_ns(self, source, model_func, model_args,
 
    
 def log_likelihood_FD(self, source, model_func, model_args, 
-                      add_norm=True, return_only_norm=False, **model_kwargs):
+                      add_norm=False, return_only_norm=False, **model_kwargs):
     # call model function with args and preset model times, then funky fourier
     fourier_hplus, fourier_hcross = self.fourier_model(model_func, 
                                                 *model_args, **model_kwargs)
