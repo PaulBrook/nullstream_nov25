@@ -35,14 +35,13 @@ def log_likelihood_TD_es(self, source, model_func, model_args,
     product = np.einsum('i...,ik,k...', x, inv_cov, x)
     ll = -0.5 * np.sum(product) # sum over times
     
-    # use log(det(cov)) = -log(det(inv_cov))
-    sign, logdet = np.linalg.slogdet(inv_cov)
-    norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
     
-    if return_only_norm:
-        return norm
-    
-    if add_norm:
+    if add_norm or return_only_norm:
+        # use log(det(cov)) = -log(det(inv_cov))
+        sign, logdet = np.linalg.slogdet(inv_cov)
+        norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
+        if return_only_norm:
+            return norm
         ll += norm
         
     return ll
@@ -102,11 +101,12 @@ def log_likelihood_TD(self, source, model_func, model_args,
         inv_cov = self._TD_inv_covs[p]
         product = np.einsum('i,ij,j', x, inv_cov, x)
         ll += -0.5 * np.sum(product) # np.sum sums over times
-        
-        # use log(det(cov)) = -log(det(inv_cov))
-        sign, logdet_inv_cov = np.linalg.slogdet(inv_cov)
-        norm += -num_times*hl2p + 0.5*logdet_inv_cov
-        
+    
+        if add_norm or return_only_norm:    
+            # use log(det(cov)) = -log(det(inv_cov))
+            sign, logdet_inv_cov = np.linalg.slogdet(inv_cov)
+            norm += -num_times*hl2p + 0.5*logdet_inv_cov
+    
     if return_only_norm:
         return norm
     
@@ -143,15 +143,14 @@ def log_likelihood_TD_ns(self, source, model_func, model_args,
     product = np.einsum('i...,ik,k...', x, ns_inv_cov, x)
     ll = -0.5 * np.sum(product) # sum over times
     
-    # for normalisation, use the inv_cov WITHOUT null-stream transformation
-    # use log(det(cov)) = -log(det(inv_cov))
-    sign, logdet = np.linalg.slogdet(inv_cov)
-    norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
-
-    if return_only_norm:
-        return norm    
     
-    if add_norm:
+    if add_norm or return_only_norm:
+        # for normalisation, use the inv_cov WITHOUT null-stream transformation
+        # use log(det(cov)) = -log(det(inv_cov))
+        sign, logdet = np.linalg.slogdet(inv_cov)
+        norm = len(times) * (-self._n_pulsars*hl2p + 0.5*logdet)
+        if return_only_norm:
+            return norm
         ll += norm
     
     return ll
@@ -182,10 +181,11 @@ def log_likelihood_FD(self, source, model_func, model_args,
         # we think there should be a factor of 2 here to compensate for missing negative frequencies
         ll += -0.5 * 2 * np.real(np.sum(product)) # np.sum sums over frequencies
         
-        # use log(det(cov)) = -log(det(inv_cov))
-        sign, logdet = np.linalg.slogdet(inv_cov)
-        # no 1/2 in norm because we have norm for real and for imag part
-        norm += -self._n_freqs*l2p + logdet
+        if add_norm or return_only_norm:
+            # use log(det(cov)) = -log(det(inv_cov))
+            sign, logdet = np.linalg.slogdet(inv_cov)
+            # no 1/2 in norm because we have norm for real and for imag part
+            norm += -self._n_freqs*l2p + logdet
         
     if return_only_norm:
         return norm        

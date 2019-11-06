@@ -82,19 +82,18 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     # the usual factor of 1/2 here
     ll = -(np.einsum('i,ij,j', x, inv_ns_cov, np.conj(x)))
     
-    # no 0.5 in norm because complex quantity
-    # for norm, use the inv_cov WITHOUT null-stream transformation
-    sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
-    norm = - N*P*l2p + log_det_inv_cov
-    
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
-    
-    if return_only_norm:
-        return norm
-    
-    if add_norm:
+
+    if add_norm or return_only_norm:
+        # no 0.5 in norm because complex quantity
+        # for norm, use the inv_cov WITHOUT null-stream transformation
+        sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
+        norm = - N*P*l2p + log_det_inv_cov
+        if return_only_norm:
+            return norm
         ll += norm
+        
     return ll
 
 def log_likelihood_FD_onlynull(self, source, add_norm=False, return_only_norm=False):
@@ -130,21 +129,18 @@ def log_likelihood_FD_onlynull(self, source, add_norm=False, return_only_norm=Fa
     assert(abs(np.imag(ll)) < abs(np.real(ll) * 1e-10))
     ll = np.real(ll)
     
-    # compute norm
-    norm_part1 = -(P-2)*N*l2p
-    
-    sign, logdet_invZ_cut = la.slogdet(invZ_cut)
-    logdet_Zcut = -logdet_invZ_cut
-    sign, logdet_bigM = la.slogdet(bigM)
-    norm_part2 = logdet_Zcut - 2*logdet_bigM
-    
-    norm = norm_part1 + norm_part2
-   
-    if return_only_norm:
-        return norm
-    
-    if add_norm:
+    if add_norm or return_only_norm:
+        # compute norm
+        norm_part1 = -(P-2)*N*l2p
+        sign, logdet_invZ_cut = la.slogdet(invZ_cut)
+        logdet_Zcut = -logdet_invZ_cut
+        sign, logdet_bigM = la.slogdet(bigM)
+        norm_part2 = logdet_Zcut - 2*logdet_bigM
+        norm = norm_part1 + norm_part2
+        if return_only_norm:
+            return norm
         ll += norm
+        
     return ll
 
 
