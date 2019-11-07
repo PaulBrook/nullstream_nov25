@@ -27,23 +27,36 @@ def concatenate_residuals(self):
     # pre-compute FD covariance for concatenated residuals
     self._big_FD_cov = block_diag(*self._TOA_FD_covs)
     self._inv_big_FD_cov = block_diag(*self._TOA_FD_inv_covs)
+    
+    # also pre-compute the (log) determinant
+    sing, logdet = la.slogdet(self._inv_big_FD_cov)
+    self._logdet_big_FD_cov = -logdet
         
-
+    
+# this function is a significant part of the time cost of ns or null likelihood
+# 161 ms ± 4.38 ms
 def _ns_covariance(self, small_ns_mat):
+    # negligible time
     P = self._n_pulsars
     N = self._n_freqs
     
+    # 43.1 µs ± 616 ns
     inv_small_ns_mat = la.inv(small_ns_mat)
     
+    # negligible time
     big_ns_mat = np.zeros((P*N, P*N))
     inv_big_ns_mat = np.zeros((P*N, P*N))
+    
+    # 651 µs ± 12.8 µs
     for j in range(N):
         # starting from point [j, j], put the elements of the small ns_mat
         # at every point [j + a*N, j + b*N], with a and b any integers.
         big_ns_mat[j::N, j::N] = small_ns_mat
         inv_big_ns_mat[j::N, j::N] = inv_small_ns_mat
     
-    # compute inv FD ns covariance (Eq. 23)
+    # this is the line that takes significant time
+    #130 ms ± 2.07 ms
+    # compute inv FD ns covariance (covariance matrix in Eq. 25)
     Zinv = inv_big_ns_mat.T @ self._inv_big_FD_cov @ inv_big_ns_mat
 
     return big_ns_mat, Zinv
@@ -88,8 +101,7 @@ def log_likelihood_FD_ns(self, source, model_func, model_args,
     if add_norm or return_only_norm:
         # no 0.5 in norm because complex quantity
         # for norm, use the inv_cov WITHOUT null-stream transformation
-        sign, log_det_inv_cov = la.slogdet(self._inv_big_FD_cov)
-        norm = - N*P*l2p + log_det_inv_cov
+        norm = - N*P*l2p - self._logdet_big_FD_cov
         if return_only_norm:
             return norm
         ll += norm
