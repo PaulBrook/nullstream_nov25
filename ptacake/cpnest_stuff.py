@@ -182,7 +182,8 @@ def run(PTA_sim, config, outdir='./output'):
         zero_amp_args = [0, 0, 0, 0.5, 1e-8]
         zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args, add_norm=True, return_only_norm=False)
         save_path = join(outdir, 'zero_logl.txt')
-        with open(save_path, 'w') as f:
+        # need w+ for write (w) and make the file if it doesn't exist already (+)
+        with open(save_path, 'w+') as f:
             f.write('{}\n'.format(zero_logl)) 
     
     

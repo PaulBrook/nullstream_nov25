@@ -117,7 +117,7 @@ except FileNotFoundError:
     
 # compute and save S/N
 snr = sim.compute_snr()
-with open (join(outdir, 'snr.txt'), 'w') as f:
+with open (join(outdir, 'snr.txt'), 'w+') as f:
     f.write('snr {}\n'.format(snr))
 
 # plotting and saving plots
