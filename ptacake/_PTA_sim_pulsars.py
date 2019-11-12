@@ -36,7 +36,7 @@ def _check_empty_pulsars(self, overwrite=False):
         else:
             raise ValueError('Already have pulsar data, specify overwrite=True')
 
-def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
+def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, min_rms=0, uniform=True,
                    weight_map_dir=None, overwrite=False, seed=None):
     """
     Pick n random pulsars from across the sky.
@@ -51,6 +51,8 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
     sig_rms: if not zero, pick rms values from a gaussian distribution
         with this as its standard deviation (except negative values
         are mapped to their positive counterpart)
+        default = 0
+    min_rms: minimum rms value allowed
         default = 0
     uniform: If true, draw pulsars evenly across the sky. Otherwise, choose
         from a distribution weighted by the population of known msps
@@ -91,7 +93,10 @@ def random_pulsars(self, n, mean_rms=1e-7, sig_rms=0, uniform=True,
         self._pulsars['theta'], self._pulsars['phi'] = hp.pix2ang(nside, pix)
 
     # normal distribution of rms values
-    self._pulsars['rms'] = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
+    rms_vals = abs(rd.normal(loc=mean_rms, scale=sig_rms, size=n))
+    # set any below the minimum to the minimum
+    rms_vals[rms_vals < min_rms] = min_rms
+    self._pulsars['rms'] = rms_vals
 
 
 def set_pulsars(self, pulsar_locations, rms, overwrite=False):
