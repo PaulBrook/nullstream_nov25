@@ -129,19 +129,30 @@ class cpnest_model(cpnest.model.Model):
         self.bounds = sample_bounds
         
 
+    # investigate time for this log_likelihood call, using FD likelihood
+    # and sim from '/home/jgoldstein/Documents/projects/ptacake_runs/all_params_evenly_sampled3/FD2
+    # NB: timing this function (by calling mod.log_likelihood) does not work, don't exactly
+    # know why but when checking the code with ?? it's some placeholder method rather than
+    # the actual function (which doesn't do anything)
     def log_likelihood(self, livepoint):
         """
         Evaluate the likelihood on a livepoint
         """
+        # negligible time
+        # 299 ns ± 6.41 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
         self.current_values.update(livepoint)
         
+        # negligible time
+        # 2.78 µs ± 35.9 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
         # go through params and convert log into not log
         for key, value in self.current_values.items():
             if key[:3] == 'log':
                 self.current_values_nolog.update({key[3:]:10**value})
             else:
                 self.current_values_nolog.update({key:value})
-            
+        
+        # negligible time
+        # 149 ns ± 2.59 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
         # split off theta and phi parameters from other model parameters
         source = [self.current_values['theta'], self.current_values['phi']]    
         
@@ -152,7 +163,14 @@ class cpnest_model(cpnest.model.Model):
         else:
             # get the rest of the model parameters in the correct order
             # then pass to likelihood function
+            
+            # negligible time
+            # 590 ns ± 6.32 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
             model_args = [self.current_values_nolog[p] for p in self.model_names]
+            
+            # this apparently takes more time than the whole function???
+            # 4.2 ms ± 60.8 µs per loop (mean ± std. dev. of 7 runs, 100 loops each) (FD)
+            # 185 ms ± 6.16 ms per loop (mean ± std. dev. of 7 runs, 1 loop each) (FD_null)
             ll = self.ll_func(source, self.model_func, model_args, 
                               add_norm=self.add_norm, return_only_norm=False, 
                               **self.model_kwargs)
@@ -165,6 +183,7 @@ def run(PTA_sim, config, outdir='./output'):
     
     # for FD_null likelihood, don't need GW model etc
     if config['ll_name'] == 'FD_null':
+        # takes negligible time also in cade of FD_null likelihood
         mod = cpnest_model(config['prior_or_value'], PTA_sim, 
                            config['ll_name'], config['add_norm'])
     
@@ -176,6 +195,8 @@ def run(PTA_sim, config, outdir='./output'):
         else:
             raise NotImplementedError('Other models than GW sinusoid currently not implemented')
         
+        # takes neglibile time
+        # 9.45 µs ± 66.2 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
         mod = cpnest_model(config['prior_or_value'], PTA_sim, config['ll_name'], 
                            config['add_norm'], model_func=model_func, 
                            model_names=model_names)
@@ -203,6 +224,8 @@ def run(PTA_sim, config, outdir='./output'):
     else:
         nthreads = sampler_opts['nthreads']
     
+    # negligible time
+    # 669 ns ± 16.1 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
     #Instantiate the sampler
     CPNest_args = dict(usermodel=mod,
                         nlive=sampler_opts['nlive'],
@@ -215,6 +238,10 @@ def run(PTA_sim, config, outdir='./output'):
     # don't want to add this keyword argument if it's not needed
     if sampler_opts['ncheckpoint'] is not None:
         CPNest_args.update(n_periodic_checkpoint=sampler_opts['ncheckpoint'])
+        
+    # this takes a bit of time (but it's done only once per run so doesn't matter)
+    # 47.7 ms ± 1.33 ms per loop (mean ± std. dev. of 7 runs, 10 loops each) (FD likelihood)
+    # 49.6 ms ± 2.1 ms per loop (mean ± std. dev. of 7 runs, 10 loops each) (FD_null likelihood)
     cpn = cpnest.CPNest(**CPNest_args)
     
     print('Putting cpnest output in {}'.format(cpn.output))
