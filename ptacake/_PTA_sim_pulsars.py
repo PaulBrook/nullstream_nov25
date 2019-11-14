@@ -182,7 +182,7 @@ def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
     for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
     if plot_point is not None    :
-        hp.projplot(*plot_point, marker='+', c='w', ms=10)
+        hp.projplot(*plot_point, marker='+', c='k', ms=10)
 
     return plt.gcf(), plt.gca()
 
