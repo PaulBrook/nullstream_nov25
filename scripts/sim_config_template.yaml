@@ -13,10 +13,13 @@
 ##############################################
 
 ### pulsar options ###
-# specify random, from_file or from_array
+# specify random, from_file, from_array or from_csv
+# from_file expects a PTA file with locations in Ra Dec etc, 
+# from_csv expects a csv file with columns theta, phi, rms
 pulsar_method: random
 
 # if random, need to specify options below
+# if from_csv, only need to specify num_pulsars and path to csv file below
 pulsar_opts:
     num_pulsars: 5
     mean_rms: 1.0e-7
@@ -25,8 +28,8 @@ pulsar_opts:
     weight_map_dir: null # use on cluster, path to dir with mps_weight_map.dat
     seed: null
 
-# if from_file, need to specify file path below
-pulsar_file: ./PTA_files/IPTA_pulsars.
+# if from_file or from_csv, specify path to pulsar/csv file
+pulsar_file: ./PTA_files/IPTA_pulsars.txt
 
 # if from_array, need to specify pulsar locations and rms below
 # each location is [theta, phi] with 0 < theta < pi and 0 < phi < 2pi

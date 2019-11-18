@@ -10,6 +10,7 @@ functions to go in the main PTA_sim class that have to do with picking/setting t
 import os
 import numpy as np
 import numpy.random as rd
+import pandas as pd
 import healpy as hp
 import matplotlib.pyplot as plt
 
@@ -132,7 +133,7 @@ def set_pulsars(self, pulsar_locations, rms, overwrite=False):
 def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
                       skip_lines=1, overwrite=False):
     """
-    Load pulsar locations and rms values from text file.
+    Load pulsar locations and rms values from text file with Ra, Dec, rms.
 
     Parameters
     ----------
@@ -161,6 +162,45 @@ def pulsars_from_file(self, filepath='./PTA_files/IPTA_pulsars.txt',
 
     # get rms from column 4 and convert microseconds in PTA data to seconds
     self._pulsars['rms'] = 1.0e-6 * PTAdata[:, 4]
+    
+    
+def pulsars_to_csv(self, filepath):
+    """
+    Save pulsar locations and rms to file with theta, phi, rms columns.
+    
+    Parameters
+    ----------
+    filepath: path to save the file to
+        If the file doesn't exist, create it (directory has to exist).
+    """
+    self._pulsars.to_csv(filepath, columns=['theta', 'phi', 'rms'], 
+                         index=False, mode='w+')
+
+    
+def pulsars_from_csv(self, filepath, sep=',', nrows=None, overwrite=False):
+    """
+    Load pulsar locations and rms values from text file with theta, phi, rms.
+    
+    Parameters
+    ----------
+    filepath: path to the txt file
+        The file must be a table including columns: theta (rd), phi (rd) and 
+        rms (seconds). The file must have a header with the column names.
+        Files created with pulsars_to_table are suitable.
+    sep: str
+        separator used between the values in the table file
+        default = ','
+    nrows: None or int
+        if none, read all the rows. If int, read only nrows from the start 
+        of the file (ignoring header)
+    overwrite: If True, overwrite already existing pulsars with new ones
+        default = False
+    """
+    self._check_empty_pulsars(overwrite=overwrite)
+    
+    pulsars = pd.read_csv(filepath, sep=sep, nrows=nrows, 
+                          usecols=['theta', 'phi', 'rms'])
+    self._pulsars=pulsars
 
 
 def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
@@ -188,4 +228,5 @@ def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
 
 
 # functions we want to add as methods to the main PTA_sim class
-functions = [_check_empty_pulsars, random_pulsars, set_pulsars, pulsars_from_file, plot_pulsar_map]
+functions = [_check_empty_pulsars, random_pulsars, set_pulsars, pulsars_from_file, 
+             pulsars_to_csv, pulsars_from_csv, plot_pulsar_map]

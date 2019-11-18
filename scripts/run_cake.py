@@ -73,16 +73,25 @@ except FileNotFoundError:
     sim = ptacake.PTA_sim()
     
     # pulsar stuff
-    if sim_config['pulsar_method'] == 'random':
+    method = sim_config['pulsar_method']
+    
+    if method == 'random':
         pulsar_opts = sim_config['pulsar_opts']
         num_pulsars = pulsar_opts.pop('num_pulsars')
         sim.random_pulsars(num_pulsars, **sim_config['pulsar_opts'])
         
-    elif sim_config['pulsar_method'] == 'from_file':
+    elif method == 'from_file':
         sim.pulsars_from_file(sim_config['pulsar_file'])
         
-    elif sim_config['pulsar_method'] == 'from_array':
+    elif method == 'from_array':
         sim.set_pulsars(sim_config['pulsar_array'], sim_config['pulsar_rms'])
+        
+    elif method == 'from_csv':
+        num_pulsars = sim_config['pulsar_opts']['num_pulsars']
+        sim.pulsars_from_csv(sim_config['pulsar_file'], nrows=num_pulsars)
+        
+    else:
+        raise ValueError('Could not create or load pulsars with method {}'.format(method))
         
     # times stuff
     if sim_config['times_evenly_sampled']:
