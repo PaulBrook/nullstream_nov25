@@ -231,7 +231,7 @@ def run(PTA_sim, config, outdir='./output'):
                         nlive=sampler_opts['nlive'],
                         maxmcmc=sampler_opts['nsteps'],
                         nthreads=nthreads,
-                        verbose=3,
+                        verbose=sampler_opts['verbosity'],
                         output=outdir,
                         resume=sampler_opts['resume'])
     # this only works for cpnest version 0.9.8 (installed from source), so we

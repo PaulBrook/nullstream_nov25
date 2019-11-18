@@ -59,3 +59,5 @@ sampler_opts:
     # set ncheckpoint to integer N for manual cpnest checkpointing every N steps
     # only works for cpnest version 0.9.8 (have to install from source)
     ncheckpoint: null
+    # cpnest verbosity: 0 (silent), 1, 2 or 3 (verbose)
+    verbosity: 1
