@@ -9,7 +9,7 @@ want to run: bunch of cpnest runs using FD and FDnull_only (maybe also TD?) like
 on sims with increasing numbers of pulsars, with a fixed source. Obtain posteriors
 on the sky location (theta, phi) parameters.
 This script is to choose some set of pulsars for these runs and to investigate
-what a good example source would be (perhaps S/N ~5 for P=5?)
+what a good example source would be (perhaps S/N ~10 for P=5?)
 """
 
 import numpy as np
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     
     ### choose injection parameters ###
     # args are: (times), phase, amplitude, polarization, cos(inclination), GW frequency
-    true_args = [0.123, 0.5e-14, np.pi/7, 0.4, 2e-8]
+    true_args = [0.123, 1.0e-14, np.pi/7, 0.4, 2e-8]
     sim.inject_signal(sinusoid_TD, true_source, *true_args)
     
     
@@ -84,11 +84,11 @@ if __name__ == '__main__':
         print('S/N at P={} {}'.format(P, snr))
         SNRs.append(snr)
     
-    sim.fourier_residuals()
-    sim.plot_residuals_FD()
-    
-    sim.white_noise()
-    sim.plot_residuals()
-    sim.fourier_residuals()
-    sim.plot_residuals_FD()
-    
+#    sim.fourier_residuals()
+#    sim.plot_residuals_FD()
+#    
+#    sim.white_noise()
+#    sim.plot_residuals()
+#    sim.fourier_residuals()
+#    sim.plot_residuals_FD()
+#    
