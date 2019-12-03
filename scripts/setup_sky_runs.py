@@ -14,6 +14,7 @@ what a good example source would be (perhaps S/N ~10 for P=5?)
 
 import numpy as np
 import numpy.random as rd
+import os
 
 import ptacake as cake
 from ptacake.GW_models import sinusoid_TD
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     
     # pick a random seed
     seed = 1010
+    rd.seed(1010)
     
     ### create a sim                                     ###
     ### and pick 100 random pulsars (with IPTA sky bias) ###
@@ -62,7 +64,7 @@ if __name__ == '__main__':
     
     ### choose injection parameters ###
     # args are: (times), phase, amplitude, polarization, cos(inclination), GW frequency
-    true_args = [0.123, 1.0e-14, np.pi/7, 0.4, 2e-8]
+    true_args = [0.456, 1.0e-14, np.pi/7, 0.4, 2e-8]
     sim.inject_signal(sinusoid_TD, true_source, *true_args)
     
     
@@ -83,6 +85,11 @@ if __name__ == '__main__':
         snr = simtest.compute_snr()
         print('S/N at P={} {}'.format(P, snr))
         SNRs.append(snr)
+    
+    ### save pulsars to file ###
+    directory = os.getcwd()
+    sim.pulsars_to_csv(os.path.join(directory, 'sky_runs_pulsars.csv'))
+    
     
 #    sim.fourier_residuals()
 #    sim.plot_residuals_FD()
