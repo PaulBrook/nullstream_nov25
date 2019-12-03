@@ -6,7 +6,6 @@ Created on Mon Aug  5 12:49:59 2019
 import numpy as np
 import os
 from os.path import join
-import sys
 
 import cpnest
 import cpnest.model
@@ -49,7 +48,7 @@ class cpnest_model(cpnest.model.Model):
                  model_func=None, model_names=[], model_kwargs={}):
         """
         prior_or_value: dict
-            keys must be all parameter names in model_names, plus 'theta', 'phi'
+            keys must be all parameter names in model_names, plus 'costheta', 'phi'
             for the source location. Each value must either be a list or tuple of 
             [lower, upper] bounds for the parameter if it is to be sampled,
             or a "true" value if it is to be fixed.
@@ -100,7 +99,7 @@ class cpnest_model(cpnest.model.Model):
                 pname = key
                 
             # first check the parameter name (without "log") is a valid model parameter name
-            if not pname in self.model_names + ['theta', 'phi']:
+            if not pname in self.model_names + ['costheta', 'phi']:
                 raise ValueError('Unknown model parameter {} given in prior dict'.format(pname))
                 
             # check if iterable with lower, upper is given or fixed value
@@ -117,8 +116,8 @@ class cpnest_model(cpnest.model.Model):
                 else:
                     self.current_values_nolog.update({pname:value})
                 
-        # check we have an entry for each model parameter and theta, phi
-        for p in self.model_names + ['theta', 'phi']:
+        # check we have an entry for each model parameter and costheta, phi
+        for p in self.model_names + ['costheta', 'phi']:
             if not (p in self.current_values or ('log' + p) in self.current_values):
                 raise ValueError('Missing fixed value or prior for parameter {} in prior dict'.format(p))
             if not p in self.current_values_nolog:
@@ -153,8 +152,9 @@ class cpnest_model(cpnest.model.Model):
         
         # negligible time
         # 149 ns ± 2.59 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
-        # split off theta and phi parameters from other model parameters
-        source = [self.current_values['theta'], self.current_values['phi']]    
+        # split off costheta and phi parameters from other model parameters
+        # and take arccos of costheta to get theta
+        source = [np.arccos(self.current_values['costheta']), self.current_values['phi']]    
         
         # for FD_null likelihood, don't have model and model_args etc
         if self.ll_name == 'FD_null':

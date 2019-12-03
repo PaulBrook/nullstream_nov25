@@ -4,13 +4,12 @@
 Created on Fri Sep 13 13:00:31 2019
 
 @author: jgoldstein
-shamelessly stolen from albertos code
+shamelessly stolen from albertos code (from Elinore)
 """
 import numpy as np
 from os.path import join, isfile
 import argparse
 import yaml
-import pickle
 import pandas as pd
 
 from ptacake.plots import seaborn_corner
@@ -81,6 +80,12 @@ with open(post_file) as f3:
     first_line = f3.readline()
 cols = first_line.split()[1:]
 post.columns = cols
+
+### change costheta to theta in posterior and sampled_params ###
+if 'costheta' in cols:
+    post['theta'] = np.arccos(post.pop('costheta'))
+if 'costheta' in sampled_params:
+    sampled_params[sampled_params.index('costheta')] = 'theta'
 
 ### plot corner ###
 

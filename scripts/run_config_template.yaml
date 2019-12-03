@@ -27,9 +27,11 @@ prior_or_value:
     logamp: [-16, -12]
     # polarization is only up to pi/4 to avoid paramter degeneracies in sinusoid
     pol: [0, 1.5707963267948966] 
+    # sample over cos(inclination) so we can use a flat prior
     cosi: [-1, 1]
     GW_freq: [0, 1.0e-7]
-    theta: [0, 3.141592653589793]
+    # sample over cos(theta)  so we can use a flat prior
+    costheta: [-1.0, 1.0]
     phi: [0, 6.283185307179586]
     
 # which likelihood function to use. We have TD, FD, FD_ns, FD_null for any data
