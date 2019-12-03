@@ -107,6 +107,8 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     # get the number of TOAs for each pulsar
     # note: we don't take t_end to be exact, but just use it to get a number
     # of TOAs that will be randomized (so the exact start time depends on them).
+    if type(t_start) == list:
+        t_start = np.array(t_start)
     obs_time = t_end - t_start
     nTOAs = np.ceil(obs_time/ mean_cadence).astype(int)
     max_nTOAs = int(np.max(nTOAs))
