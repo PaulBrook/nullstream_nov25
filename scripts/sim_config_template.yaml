@@ -61,7 +61,7 @@ times_rd_opts:
     mean_cadence: 1.0e+6
     std_cadence: 1.0e+5
     min_cadence: 1.0e+5
-    t_start: 0.0
+    max_t_start: 0.0
     t_end: 631152000.0 
     gaps: True
     exp_gap_spacing: 157788000.0

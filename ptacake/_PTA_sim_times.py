@@ -59,7 +59,7 @@ def evenly_sampled_times(self, cadence=1e6, T=20*YEAR, t_start=0):
 
 
 def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
-                      min_cadence=1e5, t_start=0.0, t_end=20*YEAR,
+                      min_cadence=1e5, max_t_start=0.0, t_end=20*YEAR,
                       gaps=True, exp_gap_spacing=5*YEAR, exp_gap_length=1e7,
                       seed=None):
     """
@@ -81,11 +81,12 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     min_cadence: float or numpy array
         minimum cadence, i.e. minimum gap between two TOAs
         default = 1e5 (seconds)
-    t_start: float or numpy array
-        start time
-        default = 0
-    t_end: float or numpy array
-        (approximate) end time
+    max_t_start: float
+        choose random start times within this period
+        default = 0 (all will start at zero)
+    t_end: float
+        (approximate) end time, which is the maximum observation time 
+        for pulsars starting at t=0
         default = 20 years
     gaps: bool
         if True, put gaps in the sampling times
@@ -107,8 +108,8 @@ def randomized_times(self, mean_cadence=1e6, std_cadence=1e5,
     # get the number of TOAs for each pulsar
     # note: we don't take t_end to be exact, but just use it to get a number
     # of TOAs that will be randomized (so the exact start time depends on them).
-    if type(t_start) == list:
-        t_start = np.array(t_start)
+    
+    t_start = rd.random(size=self._n_pulsars) * max_t_start
     obs_time = t_end - t_start
     nTOAs = np.ceil(obs_time/ mean_cadence).astype(int)
     max_nTOAs = int(np.max(nTOAs))
