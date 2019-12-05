@@ -201,6 +201,7 @@ def pulsars_from_csv(self, filepath, sep=',', nrows=None, overwrite=False):
     pulsars = pd.read_csv(filepath, sep=sep, nrows=nrows, 
                           usecols=['theta', 'phi', 'rms'])
     self._pulsars=pulsars
+    self._n_pulsars = len(pulsars)
 
 
 def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
