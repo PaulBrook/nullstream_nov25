@@ -11,6 +11,7 @@ from os.path import join, isfile
 import argparse
 import yaml
 import pandas as pd
+import sys
 
 from ptacake.plots import seaborn_corner
 
@@ -100,7 +101,10 @@ seaborn_corner(post, true_params, labels, param_names=sampled_params,
                savefile=figsave)
 
 
-### compute log Bayes factor
+### compute log Bayes factor ###
+# skip this step for ns_null likelihood
+if run_config['ll_name'] == 'FD_null':
+    sys.exit('Skipping log Bayes factor computation for ns null likelihood (we do not have a zero amplitude loglikelihood for this one)')
 
 # read in evidence
 nlive = run_config['sampler_opts']['nlive']
