@@ -61,9 +61,11 @@ def healpy_plot(skykde, pta_sim, true_source, outdir, nside=30):
         theta, phi = hp.pix2ang(nside, p)
         costheta = np.cos(theta)
         skymap[p] = skykde([costheta, phi])
+    # normalize the skykde values
+    skymap = skymap / np.sum(skymap)
     
     # make healpy map, plot pulsar locations and true source location
-    hp.mollview(skymap, title='KDE skymap')
+    hp.mollview(skymap, title='KDE skymap', unit='posterior prob.')
     marker_sizes = (pta_sim._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(pta_sim._pulsars[['theta', 'phi']].values):
         hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
@@ -91,8 +93,10 @@ def zoom_plot(skykde, true_source, outdir, npoints=500):
     
     csmesh, phimesh = np.meshgrid(cspoints, phipoints)
     skyplot = np.array([skykde(point) for point in zip(csmesh, phimesh)])
+    # normalize skykde values
+    skyplot = skyplot / np.sum(skyplot)
     
-    ## "zoom" in on skyplot by selecting no-zero part ##
+    ## "zoom" in on skyplot by selecting non-zero part ##
     # select the smallest rectangle that doesn't exclude any rows/columns that sum to more than 1e-14
     
     # first collapse phi dimension to find min and max costheta index
@@ -114,7 +118,9 @@ def zoom_plot(skykde, true_source, outdir, npoints=500):
     phimesh_zoom = phimesh[zoom]
     skyplot_zoom = skyplot[zoom]
     
-    ax2.pcolormesh(csmesh_zoom, phimesh_zoom, skyplot_zoom, linewidth=0,rasterized=True)
+    im = ax2.pcolormesh(csmesh_zoom, phimesh_zoom, skyplot_zoom, linewidth=0,rasterized=True)
+    cbar = fig2.colorbar(im, ax=ax2, )
+    cbar.set_label('posterior prob.')
     
     ## plot lines at true values ##
     ax2.vlines(np.cos(true_source[0]), *ax2.get_ylim(), linestyle='--', color='k')
