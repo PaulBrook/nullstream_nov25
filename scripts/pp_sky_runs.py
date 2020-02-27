@@ -6,7 +6,10 @@ Created on Wed Nov 27 15:21:32 2019
 @author: jgoldstein
 
 post-process cpnest results from sky runs
-get theta, phi posteriors
+- get theta, phi posterior and estimate a gaussian kde from it (and save it)
+- make a full healpy sky map with the posterior kde
+- make a zoomed in cos(theta) vs phi plot of the posterior kde 
+    (with optionally overplotted posterior samples)
 ...
 """
 
@@ -25,6 +28,8 @@ import healpy as hp
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+
+from pp_utils import get_post
 
 
 # here is the example directory
@@ -49,7 +54,6 @@ args = parser.parse_args()
 
 #args_placeholder = namedtuple('args_placeholder', ['example', 'plots'])
 #args = args_placeholder(example=True, plots=True)
-
 
 ### make healpy map from skykde ####
 def healpy_plot(skykde, pta_sim, true_source, outdir, nside=30):
@@ -78,7 +82,7 @@ def healpy_plot(skykde, pta_sim, true_source, outdir, nside=30):
     
 ### plot skykde on zoomed in plot ###
 #ct = cos(theta)
-def zoom_plot(skykde, true_source, outdir, npoints=500):
+def zoom_plot(skykde, true_source, outdir, npoints=500, overplot_samples=None):
     
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
@@ -138,6 +142,9 @@ def zoom_plot(skykde, true_source, outdir, npoints=500):
     cs_tlbs = [f'{t:.2f}' for t in csticks]
     ax2.set_xticklabels(cs_tlbs)
     
+    # overplot posterior samples
+    ax2.scatter(*overplot_samples, c='w', marker='.', alpha=0.2)
+    
     fig2.savefig(join(outdir, 'kde_skyplot.png'), dpi=800)
     
     
@@ -180,13 +187,7 @@ if __name__ == "__main__":
     if not isfile(post_file):
         raise FileNotFoundError('Can not find posterior.dat in {}'.format(cpnest_path))
         
-    # does not read header with column names, because that line starts with #
-    post = pd.read_csv(post_file, delim_whitespace=True, header=None, comment='#')
-    # read column names from first line of posterior.dat
-    with open(post_file) as f3:
-        first_line = f3.readline()
-    cols = first_line.split()[1:]
-    post.columns = cols
+    post = get_post(post_file)
     
     ### make KDE from sky posterior ###
     
@@ -203,8 +204,13 @@ if __name__ == "__main__":
     
     ### optional plots ###
     if args.plots:
-        healpy_plot(skykde, pta_sim, true_source, outdir, nside=32)
-        zoom_plot(skykde, true_source, outdir, npoints=500)
+        #healpy_plot(skykde, pta_sim, true_source, outdir, nside=32)
+        
+        # plot posterior samples over zoom kde plot
+        # there are many so only plot every 10th sample
+        overplot_samples = post[['costheta', 'phi']].values.T[:, ::10]
+        zoom_plot(skykde, true_source, outdir, npoints=500, 
+                  overplot_samples=overplot_samples)
     
     
 

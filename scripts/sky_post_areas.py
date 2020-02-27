@@ -4,6 +4,16 @@
 Created on Thu Jan  9 11:31:07 2020
 
 @author: jgoldstein
+
+NB These methods don't work very well, use ligo.skymap things instead (in albertos_pp)
+
+make a plot of number of pulsars vs X% posterior area
+- for each number of pulsars N, load posterior samples and posterior kde 
+    for P (full FD likelihood) and Q (null-stream null only likelihood)
+- compute the areas, by way of healpy pixelation, that contain X% of the 
+    total posterior for some values of X (50%, 90% and 95%)
+- make a plot of N vs area, for each X and for both P and Q
+- plot healpy maps of the posterior KDE within each X% area, per N (and P/Q)
 """
 
 import pickle
@@ -15,16 +25,8 @@ from os.path import join
 import matplotlib.pyplot as plt
 from scipy.integrate import cumtrapz
 
+from pp_utils import get_post
 
-def read_post_file(file_path):
-    post = pd.read_csv(file_path, delim_whitespace=True, header=None, comment='#')
-    # read in column names from first line
-    # (can't read them in with pandas bc they're commented with #)
-    with open(file_path) as f:
-        first_line = f.readline()
-    cols = first_line.split()[1:]
-    post.columns = cols
-    return post
 
 def load_kde(file_path):
     with open(file_path, 'rb') as f:
@@ -178,7 +180,7 @@ if __name__ == '__main__':
         
         
         try:
-            Ppost = read_post_file(Ppost_path)
+            Ppost = get_post(Ppost_path)
             Pskykde = load_kde(Pskykde_path)
             Qskykde = load_kde(Qskykde_path)
         except FileNotFoundError:
