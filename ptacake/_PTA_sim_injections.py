@@ -78,7 +78,7 @@ def inject_stochastic(self, sky, pulsar_term=False, random_state=None):
         self._noise += pterm
 
 
-def white_noise(self):
+def white_noise(self, seed=1000):
     """
     Inject gaussian noise according to each pulsar's rms level.
     This deletes any previously injected noise (but keeps signal the same).
@@ -88,6 +88,7 @@ def white_noise(self):
     # output size is the shape (num times, num sigma) and not the other way around.
     # So we request is in "reversed" order, then transpose the output.
     reverse_shape = self._times.T.shape
+    rd.seed(seed)
     noise = rd.normal(scale=self._pulsars['rms'].values, size=reverse_shape)
     # don't add to any previously existing noise
     self._noise = noise.T

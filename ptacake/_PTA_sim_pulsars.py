@@ -214,7 +214,7 @@ def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
     (fig, ax) matplotlib figure and axis objects
     """
     if background_map is None:
-        background_map = np.zeros(hp.nside2npix(1))
+        background_map = np.full(hp.nside2npix(1), hp.UNSEEN)
 
     hp.mollview(background_map, title='{}-pulsar PTA'.format(len(self._pulsars)),
                 **hp_kwargs)
