@@ -80,7 +80,13 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         # ER: not diagonal for rms changing over time OR for gappy/uneven data
         # spectral leakage is expected since funky FT is an approximation
         # should be block-diagonal: different freqs (but not psrs) are coupled
-        FD_cov = np.diag(np.diag(np.real(FD_cov)))
+       
+        # so this was probaby still wrong
+        #FD_cov = np.diag(np.diag(np.real(FD_cov)))
+        
+        # and it should have been this all the time
+        FD_cov = np.real(FD_cov)
+        
         self._TOA_FD_covs.append(FD_cov)
         self._TOA_FD_inv_covs.append(np.linalg.inv(FD_cov))
         sign, logdet = np.linalg.slogdet(FD_cov)
