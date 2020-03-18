@@ -155,5 +155,7 @@ def log_likelihood_FD_onlynull(self, source, add_norm=False, return_only_norm=Fa
         
     return ll
 
+# write likelihood for first two null-streams only, try that
+
 
 functions = [concatenate_residuals, _ns_covariance, log_likelihood_FD_ns, log_likelihood_FD_onlynull]
