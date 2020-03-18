@@ -20,15 +20,23 @@ import ptacake as cake
 from ptacake.GW_models import sinusoid_TD
 
 # all the potential numbers of pulsars
-Pvals = [3, 5, 8, 10, 15, 20, 30, 50, 100]
+#Pvals = [3, 5, 8, 10, 15, 20, 30, 50, 100]
+Pvals = [3, 5, 8 ,10, 20, 50, 100]
 # maximum one
 Pmax = 100
 
 if __name__ == '__main__':
     
+    runs_idx = 3
+    
+    directory = '/home/jgoldstein/Documents/projects/ptacake_runs/sky_runs{}'.format(runs_idx)
+    pulsar_file = 'sky_runs{}_pulsars.csv'.format(runs_idx)
+    radec_file = 'pulsars{}_radec_test.txt'.format(runs_idx)
+    
     # pick a random seed
-    seed = 1010
-    rd.seed(1010)
+    # 1010 for sky_runs (1), 1011 for sky_runs2, 1012 for sky_runs3 etc
+    seed = 1009 + runs_idx
+    rd.seed(seed)
     
     ### create a sim                                     ###
     ### and pick 100 random pulsars (with IPTA sky bias) ###
@@ -49,15 +57,15 @@ if __name__ == '__main__':
     mean_dt = 2.0e6 # about 23 days
     std_dt = 1.0e5
     min_dt = 1.0e5 # about 1.2 days
-    # pick random start times for all the pulsars within 5 years
-    t_start = rd.random(size=Pmax) * 5 * cake.YEAR
+    # this will pick random start times for all the pulsars within 5 years
+    max_t_start = 5 * cake.YEAR
     # all pulsars have the same end time
     t_end = 20 * cake.YEAR
     # set a gap on average every 5 years, lasting on average about 58 days
     exp_gap_spacing = 5 * cake.YEAR
     exp_gap_length = 5.0e6
     sim.randomized_times(mean_cadence=mean_dt, std_cadence=std_dt, min_cadence=min_dt,
-                         t_start=t_start, t_end=t_end,
+                         max_t_start=max_t_start, t_end=t_end,
                          gaps=True, exp_gap_spacing=exp_gap_spacing, exp_gap_length=exp_gap_length,
                          seed=seed)
     
@@ -77,7 +85,7 @@ if __name__ == '__main__':
         simtest = cake.PTA_sim()
         simtest.set_pulsars(sim._pulsars[['theta', 'phi']].values[:P], sim._pulsars['rms'].values[:P])
         simtest.randomized_times(mean_cadence=mean_dt, std_cadence=std_dt, min_cadence=min_dt,
-                         t_start=t_start[:P], t_end=t_end,
+                         max_t_start=max_t_start, t_end=t_end,
                          gaps=True, exp_gap_spacing=exp_gap_spacing, exp_gap_length=exp_gap_length,
                          seed=seed)
         simtest.inject_signal(sinusoid_TD, true_source, *true_args)
@@ -85,11 +93,23 @@ if __name__ == '__main__':
         snr = simtest.compute_snr()
         print('S/N at P={} {}'.format(P, snr))
         SNRs.append(snr)
+        
+        simtest.plot_pulsar_map(plot_point=true_source)
     
     ### save pulsars to file ###
-    directory = os.getcwd()
-    sim.pulsars_to_csv(os.path.join(directory, 'sky_runs_pulsars.csv'))
+    print('Saving pulsar file in {}'.format(directory))
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+    sim.pulsars_to_csv(os.path.join(directory, pulsar_file))
     
+    ### save ra, dec and rms of pulsars for later plotting with ligo.skymap ###
+    import pandas as pd
+    pulsars = pd.read_csv(os.path.join(directory, pulsar_file))
+    pulsars['Lon'] = (pulsars['phi'] + np.pi)%(2*np.pi)
+    pulsars['Lat'] = np.pi/2 - pulsars['theta']
+    pulsars['Lon_deg'] = (180/np.pi) * pulsars['Lon']
+    pulsars['Lat_deg'] = (180/np.pi) * pulsars['Lat']
+    np.savetxt(os.path.join(directory, radec_file), pulsars[['Lon_deg', 'Lat_deg', 'rms']].values)    
     
 #    sim.fourier_residuals()
 #    sim.plot_residuals_FD()
