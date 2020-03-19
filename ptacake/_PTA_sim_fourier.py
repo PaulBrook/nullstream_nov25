@@ -75,16 +75,12 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         self._TOA_weights.append(weights)
         self._TOA_fourier_mats.append(mat)
         FD_cov = np.einsum('aj,jk,bk', mat, self._TD_covs[p], np.conj(mat))
-        # enforce FD_cov is real and diagonal
-        # TODO are they also diagonal if the noise rms changes over time?
-        # ER: not diagonal for rms changing over time OR for gappy/uneven data
-        # spectral leakage is expected since funky FT is an approximation
-        # should be block-diagonal: different freqs (but not psrs) are coupled
-       
-        # so this was probaby still wrong
-        #FD_cov = np.diag(np.diag(np.real(FD_cov)))
         
-        # and it should have been this all the time
+        # Enfore FD_cov to be real
+        # previously, it was also forced to be diagonal, however, THIS WAS WRONG
+        # As Elinore explained, it can be non-diagonal for changing rms over time 
+        # (not currently implemented) OR for gappy/uneven data (which is implemented!)
+        # spectral leakage is expected since funky FT is an approximation
         FD_cov = np.real(FD_cov)
         
         self._TOA_FD_covs.append(FD_cov)
