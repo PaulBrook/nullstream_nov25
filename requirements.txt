@@ -8,7 +8,6 @@ kiwisolver==1.1.0
 matplotlib==3.1.1
 numpy==1.17.2
 pandas==0.25.1
--e git+git@github.com:cjm96/NullStreams.git@498a524ef3c65241252eadf9cc25e61f96f83553#egg=ptacake
 pyparsing==2.4.2
 python-dateutil==2.8.0
 pytz==2019.2
