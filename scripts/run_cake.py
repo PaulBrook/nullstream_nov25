@@ -107,7 +107,17 @@ except FileNotFoundError:
         raise NotImplementedError('Model {} not yet implemented'.format(sim_config['model_name']))
     
     if sim_config['white_noise']:
-        sim.white_noise(seed=sim_config['noise_seed'])
+        
+        # try to read scale for white noise from config file, if not in config
+        # or Null, set to 1 (then it doens't do anything)
+        try:
+            scale = sim_config['noise_scale']
+        except:
+            scale = 1
+        if scale is None:
+            scale = 1
+        
+        sim.white_noise(seed=sim_config['noise_seed'], scale=scale)
         
         
     # if using FD likelihood, need to run fourier_residuals

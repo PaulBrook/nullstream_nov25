@@ -28,7 +28,7 @@ def HellingsDowns(angle):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=(4, 3))
     ax = fig.add_subplot(111)
     
     angles = np.linspace(0, np.pi, 1000)
@@ -44,4 +44,5 @@ if __name__ == '__main__':
     ax.set_xlabel(r'$\gamma_{ij}$', fontsize=12)
     ax.set_ylabel(r'$C_{ij}$', fontsize=12)
     
+    fig.tight_layout()
     fig.savefig('/home/jgoldstein/Documents/projects/janna-thesis/figures/Hellings_Downs.pdf')

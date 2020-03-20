@@ -78,10 +78,12 @@ def inject_stochastic(self, sky, pulsar_term=False, random_state=None):
         self._noise += pterm
 
 
-def white_noise(self, seed=1000):
+def white_noise(self, seed=1000, scale=1):
     """
-    Inject gaussian noise according to each pulsar's rms level.
-    This deletes any previously injected noise (but keeps signal the same).
+    Inject gaussian noise according to each pulsar's rms level. This deletes 
+    any previously injected noise (but keeps signal the same). Use keyword 
+    scale to inject white noise scaled up or down relative to pulsar rms levels, 
+    for example scale=0.1 to inject 10% of noise (keeps covariance matrix the same).
     """
     # We want to get multiple output values (num times) for each value of the
     # noise rms (sigma). np.random can do this, but only if the requested
@@ -91,7 +93,8 @@ def white_noise(self, seed=1000):
     rd.seed(seed)
     noise = rd.normal(scale=self._pulsars['rms'].values, size=reverse_shape)
     # don't add to any previously existing noise
-    self._noise = noise.T
+    # scale with keyword scale
+    self._noise = scale * noise.T
 
     assert(self._noise.shape == self._times.shape)
 

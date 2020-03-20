@@ -79,6 +79,7 @@ true_args: [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8] # need to match args of chosen model
 # if True, add white noise according to each pulsar's rms
 white_noise: False
 noise_seed: 1000
+noise_scale: null # scale injected white noise by this factor (no effect if null or 1)
 
 ### plotting options ###
 
