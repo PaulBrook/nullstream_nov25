@@ -22,7 +22,7 @@ def freq(chirp_mass, time_to_coal):
 def HellingsDowns(angle):
     
     term = (1 - np.cos(angle)) / 2
-    return term * np.log( term ) - (1/6)*term + (1/3)
+    return (3/2) * (term * np.log( term ) - (1/6)*term + (1/3))
 
 
 if __name__ == '__main__':
