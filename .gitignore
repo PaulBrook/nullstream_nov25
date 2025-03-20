@@ -11,3 +11,4 @@ dist/*
 some_runs_output/*
 venv/*
 *.tar.gz
+venv_orig/*

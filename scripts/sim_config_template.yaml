@@ -21,7 +21,7 @@ pulsar_method: random
 # if random, need to specify options below
 # if from_csv, only need to specify num_pulsars and path to csv file below
 pulsar_opts:
-    num_pulsars: 5
+    num_pulsars: 7
     mean_rms: 1.0e-7
     sig_rms: 5.0e-8
     uniform: False
@@ -73,8 +73,9 @@ times_rd_opts:
 
 # currently only have sinusoid_TD (a GW binary w/o inspiral) implemented
 model_name: sinusoid_TD
-true_source: [0.5, 0.5]
-true_args: [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8] # need to match args of chosen model
+#true_source: [0.5, 0.5]
+true_source: [1.5, 2.5]
+true_args: [0.5, 1.0e-14, 0.5, 0.5, 3.0e-8] # need to match args of chosen model
 
 # if True, add white noise according to each pulsar's rms
 white_noise: False

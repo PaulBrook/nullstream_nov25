@@ -9,7 +9,7 @@ from os.path import join
 
 import cpnest
 import cpnest.model
-
+import sys
 
 class cpnest_model(cpnest.model.Model):
     """
@@ -212,7 +212,7 @@ def run(PTA_sim, config, outdir='./output'):
         save_path = join(outdir, 'zero_logl.txt')
         # need w+ for write (w) and make the file if it doesn't exist already (+)
         with open(save_path, 'w+') as f:
-            f.write('{}\n'.format(zero_logl)) 
+            f.write('{}\n'.format(zero_logl))
     
     
     sampler_opts = config['sampler_opts']

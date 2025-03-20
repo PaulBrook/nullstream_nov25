@@ -55,7 +55,7 @@ sampler: cpnest # or grid
 
 sampler_opts:
     nlive: 1024
-    nsteps: 2000
+    nsteps: 4000
     nthreads: 1
     resume: True
     # set ncheckpoint to integer N for manual cpnest checkpointing every N steps

@@ -168,7 +168,6 @@ def log_likelihood_FD(self, source, model_func, model_args,
     Fcross = np.expand_dims(responses[:, 1], -1)
     # Npulsars x Nfreqs
     model = Fplus * fourier_hplus + Fcross * fourier_hcross
-    
     # compute logl and norm by summing contributions per pulsar
     ll = 0
     norm = 0
@@ -180,6 +179,7 @@ def log_likelihood_FD(self, source, model_func, model_args,
         product = np.einsum('a,ab,b', x, inv_cov, np.conj(x))
         # we think there should be a factor of 2 here to compensate for missing negative frequencies
         ll += -0.5 * 2 * np.real(np.sum(product)) # np.sum sums over frequencies
+
         
         if add_norm or return_only_norm:
             # use log(det(cov)) = -log(det(inv_cov))

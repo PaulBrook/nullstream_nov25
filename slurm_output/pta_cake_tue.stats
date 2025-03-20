@@ -1,0 +1,68 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Tue Mar 18 14:43:34 2025 for brookp(842901)
+| Identity jobid 19779183 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition icelake-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0207u36a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Tue Mar 18 14:43:56 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:04.805 cputime, 656K memory used) - 00:00:22 walltime
+| JobState COMPLETING - Reason NonZeroExitCode
+| Exitcode 1:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Tue Mar 18 14:46:53 2025 for brookp(842901)
+| Identity jobid 19779272 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition icelake-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0207u31b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Tue Mar 18 14:47:14 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:04.955 cputime, 654K memory used) - 00:00:21 walltime
+| JobState COMPLETING - Reason NonZeroExitCode
+| Exitcode 1:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Tue Mar 18 14:49:24 2025 for brookp(842901)
+| Identity jobid 19779349 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition icelake-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0207u06a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Tue Mar 18 14:49:48 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:06.894 cputime, 654K memory used) - 00:00:24 walltime
+| JobState COMPLETING - Reason NonZeroExitCode
+| Exitcode 1:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Tue Mar 18 14:52:53 2025 for brookp(842901)
+| Identity jobid 19779412 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition icelake-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0207u06a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Tue Mar 18 14:54:07 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:06.761 cputime, 187079K memory used) - 00:01:14 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:15
++--------------------------------------------------------------------------+

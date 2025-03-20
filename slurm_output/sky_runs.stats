@@ -1,0 +1,102 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 19:33:00 2025 for brookp(842901)
+| Identity jobid 19698410 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u07a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 19:34:02 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:46.663 cputime, 168702K memory used) - 00:01:02 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 19:39:21 2025 for brookp(842901)
+| Identity jobid 19698607 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u06b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 19:40:37 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:47.191 cputime, 165860K memory used) - 00:01:16 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 19:43:31 2025 for brookp(842901)
+| Identity jobid 19698722 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u07a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 19:44:32 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:47.999 cputime, 169004K memory used) - 00:01:01 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 19:50:53 2025 for brookp(842901)
+| Identity jobid 19699176 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u07b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 19:52:04 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:46.007 cputime, 164585K memory used) - 00:01:11 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 20:33:21 2025 for brookp(842901)
+| Identity jobid 19699829 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u07a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 20:34:33 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:45.706 cputime, 165105K memory used) - 00:01:12 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sun Mar 16 21:05:34 2025 for brookp(842901)
+| Identity jobid 19700184 jobname pp_sky_runs
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u10b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pp_sky_runs.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Mar 16 21:06:26 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:23.483 cputime, 165027K memory used) - 00:00:51 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+

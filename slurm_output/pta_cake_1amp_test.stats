@@ -1,0 +1,85 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar 19 15:31:06 2025 for brookp(842901)
+| Identity jobid 19835526 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u04a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar 19 15:32:02 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:18.958 cputime, 138517K memory used) - 00:00:58 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar 19 15:43:07 2025 for brookp(842901)
+| Identity jobid 19836109 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u04a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar 19 15:43:30 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:19.824 cputime, 692K memory used) - 00:00:25 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar 19 15:46:07 2025 for brookp(842901)
+| Identity jobid 19836120 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u11b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar 19 15:46:55 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:18.510 cputime, 145563K memory used) - 00:00:50 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar 19 15:50:35 2025 for brookp(842901)
+| Identity jobid 19836192 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u06a
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar 19 15:51:25 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:18.063 cputime, 141774K memory used) - 00:00:50 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar 19 16:01:08 2025 for brookp(842901)
+| Identity jobid 19837292 jobname pta_cake
+| Running against project vecchioa-gw-pta and in partition emerald-shared
+| Requested cpu=1,mem=10G,node=1,billing=1 - 10-00:00:00 walltime
+| Allocated cpu=1,mem=10G,node=1,billing=1
+| Assigned to nodes bear-pg0201u33b
+| Command /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts/run_pta_cake.sh
+| WorkDir /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/bash_scripts
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar 19 16:01:59 2025 for brookp(842901) on the BlueBEAR Cluster
+| Required (00:18.283 cputime, 145864K memory used) - 00:00:51 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+

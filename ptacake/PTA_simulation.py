@@ -81,6 +81,26 @@ class PTA_sim:
             weights = self._pulsars['nTOA']/self._pulsars['rms']**2
         return Kllmm(self._pulsars, weights=weights)
 
+
+    def set_residuals(self, real_residuals, real_toas):
+        """                                                                                      
+        Set the residuals for the simulation using real pulsar data.                             
+        This method assumes real_residuals is a numeric array or similar.                        
+        """
+        # If you need to split residuals into signal and noise:                                  
+        # For example, assume real_residuals are the sum of signal and noise                     
+        # You may need to define how to separate them or just assign directly                    
+        #self._signal = real_residuals[:,:] + self._signal  # Set this according to your needs   
+        #self._signal = np.concatenate((real_residuals[:, :80] + self._signal[:, :80], real_residuals[:, 80:]), axis=1)                                                                          
+        self._signal = real_residuals  # Set this according to your needs                        
+        #print(f'Shape signal: {self._signal.shape}')                                            
+        #print(self._signal[0,:])                                                                
+        self._times = real_toas
+        self._noise = np.zeros_like(self._signal)
+        print(f"Signal shape: {self._signal.shape}, Toas shape: {self._times.shape}, Noise shape: {self._noise.shape}")
+        
+        
+    
     def plot_coupling(self, **kwargs):
         """
         Plot the coupling matrix for the pulsar array

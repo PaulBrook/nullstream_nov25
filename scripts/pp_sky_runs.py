@@ -30,7 +30,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from pp_utils import get_post
-
+import os
 
 # here is the example directory
 # use this for faster testing of this script
@@ -59,20 +59,23 @@ args = parser.parse_args()
 def healpy_plot(skykde, pta_sim, true_source, outdir, nside=30):
     npix = hp.nside2npix(nside)
     pix = np.arange(npix)
-    skymap = np.zeros_like(pix)
+    skymap = np.zeros_like(pix, dtype=float)
     
     for p in pix:
         theta, phi = hp.pix2ang(nside, p)
         costheta = np.cos(theta)
         skymap[p] = skykde([costheta, phi])
     # normalize the skykde values
+    print(f'SKYMAP: {skymap}')
+    print(f'SUM: {np.sum(skymap)}')
     skymap = skymap / np.sum(skymap)
-    
+
     # make healpy map, plot pulsar locations and true source location
     hp.mollview(skymap, title='KDE skymap', unit='posterior prob.')
     marker_sizes = (pta_sim._pulsars['rms'].values/1.e-7)**(-0.4)*10
     for p, pulsar in enumerate(pta_sim._pulsars[['theta', 'phi']].values):
-        hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+        #hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+        hp.projplot(*pulsar, marker='*', c='w', ms=10)
     hp.projplot(*true_source, marker='+', c='k', ms=10)
     
     # save the figure
@@ -174,8 +177,12 @@ if __name__ == "__main__":
     with open(sim_config_path, 'r') as f1:
         sim_config = yaml.safe_load(f1)
     true_source = sim_config['true_source']
+    print(f'true_source: {true_source}')
     
     ### read in pta_sim from pickle ###
+
+    import sys
+    sys.path.insert(0, '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig')
     
     pta_sim_path = join(cpnest_path, 'pta_sim.pickle')
     with open(pta_sim_path, 'rb') as f4:
@@ -199,12 +206,13 @@ if __name__ == "__main__":
             skykde = pickle.load(f2)
     except FileNotFoundError:
         skykde = gaussian_kde(post[['costheta', 'phi']].values.T)
+        os.makedirs(outdir, exist_ok=True)
         with open(join(outdir, 'skykde.pickle'), 'wb+') as f3:
             pickle.dump(skykde, f3)
     
     ### optional plots ###
     if args.plots:
-        #healpy_plot(skykde, pta_sim, true_source, outdir, nside=32)
+        healpy_plot(skykde, pta_sim, true_source, outdir, nside=32)
         
         # plot posterior samples over zoom kde plot
         # there are many so only plot every 10th sample
