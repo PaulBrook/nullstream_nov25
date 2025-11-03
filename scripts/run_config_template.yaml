@@ -57,7 +57,7 @@ prior_or_value:
 ll_name: FD_dyn
 # whether to add normalisation to likelihood where possible
 # note that there isn't a mathematically responsible normalisation for FD_null
-add_norm: False
+add_norm: True
 
 
 ### output ####

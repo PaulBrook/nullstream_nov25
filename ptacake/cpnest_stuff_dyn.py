@@ -320,15 +320,15 @@ def dynesty_run(PTA_sim, config, outdir='./output'):
         
         # Compute likelihoods
         print("Testing likelihood with true parameters:")
-        true_logl = mod.ll_func(true_params)
+        true_logl = mod.ll_func(true_params, add_norm=True)
         print(f"True log-likelihood: {true_logl}")
         
         print("Testing likelihood with offset GW amplitude:")
-        gw_logl = mod.ll_func(test_params_gw)
+        gw_logl = mod.ll_func(test_params_gw, add_norm=True)
         print(f"Offset GW amplitude log-likelihood: {gw_logl}")
         
         print("Testing likelihood with offset red noise:")
-        red_logl = mod.ll_func(test_params_red)
+        red_logl = mod.ll_func(test_params_red, add_norm=True)
         print(f"Offset red noise log-likelihood: {red_logl}")
         
 
@@ -338,7 +338,7 @@ def dynesty_run(PTA_sim, config, outdir='./output'):
         #zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args,
         #                        add_norm=config['add_norm'], return_only_norm=False)
         #zero_logl = mod.ll_func([0, 0], model_func, zero_amp_args)
-        zero_logl = mod.ll_func(zero_amp_args)
+        zero_logl = mod.ll_func(zero_amp_args, add_norm=True)
         save_path = join(outdir, 'zero_logl.txt')
         # need w+ for write (w) and make the file if it doesn't exist already (+)
         with open(save_path, 'w+') as f:
