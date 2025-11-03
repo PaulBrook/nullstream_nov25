@@ -24,20 +24,37 @@ model_name: sinusoid_TD
 # it'll be interpreted at log10 of that parameter value
 prior_or_value:
     phase: [0, 6.283185307179586]
-    logamp: [-16, -12]
+    logamp: [-16, -11]
     # polarization is only up to pi/4 to avoid paramter degeneracies in sinusoid
     pol: [0, 1.5707963267948966] 
     # sample over cos(inclination) so we can use a flat prior
     cosi: [-1, 1]
-    GW_freq: [0, 1.0e-7]
+    #GW_freq: [1.0e-9, 1.0e-7] # 32 years to 0.3 years
+    GW_freq: [7.0e-9, 3.5e-7] # 4.5 years to 0.1 years
     # sample over cos(theta)  so we can use a flat prior
     costheta: [-1.0, 1.0]
     phi: [0, 6.283185307179586]
+    rms_factor: [0.1, 10]
+    # Templates for red noise priors
+    #logA_red_template: [-13.5, -12.5]
+    #gamma_red_template: [2.0, 4.0]
+    logA_red_template: [-13.5, -12.5]
+    gamma_red_template: [2.0, 4.0]
+    #logA_red_p0: [-16, -11]
+    #gamma_red_p0: [0.0, 7.0]
+    #logA_red_p1: [-16, -11]
+    #gamma_red_p1: [0.0, 7.0]
+    #logA_red_p2: [-16, -11]
+    #gamma_red_p2: [0.0, 7.0]
+    #logA_red_p3: [-16, -11]
+    #gamma_red_p3: [0.0, 7.0]
+    #logA_red_p4: [-16, -11]
+    #gamma_red_p4: [0.0, 7.0]
     
 # which likelihood function to use. We have TD, FD, FD_ns, FD_null for any data
 # note: ns means all null-streams (including first two), null means only "null" null-streams
 # or TD_es, TD_ns only for evenly sampled data (es = evenly sampled)
-ll_name: FD
+ll_name: FD_dyn
 # whether to add normalisation to likelihood where possible
 # note that there isn't a mathematically responsible normalisation for FD_null
 add_norm: False

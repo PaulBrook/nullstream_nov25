@@ -1,0 +1,730 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Aug  6 12:55:14 2019
+
+@author: jgoldstein
+"""
+import yaml
+import os
+from os.path import join, isfile
+import argparse
+import pickle
+import glob
+import numpy as np
+import sys
+import time
+import matplotlib.pyplot as plt
+
+# Add the directory containing the script to sys.path
+sys.path.append('/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/ptacake')
+
+# Remove previously loaded ptacake module
+if 'ptacake' in sys.modules:
+    del sys.modules['ptacake']
+
+# Add the new directory to sys.path
+sys.path.insert(0, '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig')
+
+import ptacake
+from dynesty import NestedSampler
+
+print(ptacake.__file__)
+
+# Record start time
+start_time = time.time()
+
+# Import the module
+from from_jannasutils import radec_location_to_ang, radec_to_thetaphi, radec_reduced_to_thetaphi
+
+### command line options for sim and run config ###
+
+parser = argparse.ArgumentParser("Make a PTA sim, then run cpnest")
+parser.add_argument('-s', '--sim_config', required=True, dest='sim_config',
+                    help='config file for PTA simulation')
+parser.add_argument('-r', '--run_config', required=True, dest='run_config',
+                    help='config file for CPNest run')
+parser.add_argument('-o', '--output_dir', required=True,
+                    help='Output directory')
+
+
+args = parser.parse_args()
+
+# check that both config files exist
+if not isfile(args.sim_config):
+    parser.error('sim config file {} does not exist!'.format(args.sim_config))
+if not isfile(args.run_config):
+    parser.error('run config file {} does not exist!'.format(args.run_config))
+    
+    
+### read in sim config and run config ###
+    
+with open(args.sim_config, 'r') as f1:
+    sim_config = yaml.safe_load(f1)
+    
+with open(args.run_config, 'r') as f2:
+    run_config = yaml.safe_load(f2)
+
+# --- Expand red noise templates into per-pulsar priors, if present ---
+prior_dict = run_config.get('prior_or_value', {})
+
+if 'logA_red_template' in prior_dict and 'gamma_red_template' in prior_dict:
+    # Determine how many pulsars you have in your simulation
+    num_pulsars = sim_config['pulsar_opts']['num_pulsars']
+
+    if num_pulsars == 0:
+        print("Warning: pulsar list not found in sim_config; defaulting to 1")
+        num_pulsars = 1
+
+    for i in range(num_pulsars):
+        prior_dict[f'logA_red_p{i}'] = prior_dict['logA_red_template']
+        prior_dict[f'gamma_red_p{i}'] = prior_dict['gamma_red_template']
+
+    # Optionally remove the templates so they don't appear in sampling
+    del prior_dict['logA_red_template']
+    del prior_dict['gamma_red_template']
+
+    # Update back into run_config
+    run_config['prior_or_value'] = prior_dict
+    print(f"Expanded red-noise priors for {num_pulsars} pulsars.")
+    print(run_config['prior_or_value'])
+
+    
+### get and adjust output path ###
+    
+#outdir = run_config['output_path']
+outdir = args.output_dir
+# check if environment variable TMPDIR exists and if run_config option to use
+# it is True. If so, put output dir inside there.
+if 'TMPDIR' in os.environ and run_config['use_tmp']:
+    tmpdir = os.environ['TMPDIR']
+    if os.path.exists(tmpdir):
+        print('Found TMPDIR (putting output dir within) {}'.format(tmpdir))
+        outdir = join(tmpdir, outdir)
+    
+# normpath removes excess '/./'
+outdir = os.path.normpath(outdir)
+print('Putting plot etc output in {}'.format(outdir))
+
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
+    print('created dir {}. succes? {}'.format(outdir, os.path.exists(outdir)))    
+
+
+### make or load PTA sim ###
+    
+# first check for pta sim pickle (resume from previous run)  
+sim_pickle_path = join(outdir, 'pta_sim.pickle')
+try:
+    raise Exception("Skipping sim pickle loading")
+    with open(sim_pickle_path, 'rb') as f:
+        sim = pickle.load(f)
+        print('resuming run with stored pta_sim in {}'.format(sim_pickle_path))
+        
+#except FileNotFoundError:
+except Exception:
+    # we do not have a sim pickle to resume from a previous run, 
+    # so do the simulation
+    sim = ptacake.PTA_sim()
+    
+    # pulsar stuff
+    method = sim_config['pulsar_method']
+    
+    if method == 'random':
+        pulsar_opts = sim_config['pulsar_opts']
+        num_pulsars = pulsar_opts.pop('num_pulsars')
+        sim.random_pulsars(num_pulsars, **sim_config['pulsar_opts'])
+        
+    #elif method == 'from_file':
+    #    sim.pulsars_from_file(sim_config['pulsar_file'])
+        
+    #elif method == 'from_array':
+    #    sim.set_pulsars(sim_config['pulsar_array'], sim_config['pulsar_rms])
+        
+    #elif method == 'from_csv':
+    #    num_pulsars = sim_config['pulsar_opts']['num_pulsars']
+    #    sim.pulsars_from_csv(sim_config['pulsar_file'], nrows=num_pulsars)
+        
+    #else:
+    #    raise ValueError('Could not create or load pulsars with method {}'.format(method))
+        
+    # times stuff
+    if sim_config['times_evenly_sampled']:
+        sim.evenly_sampled_times(**sim_config['times_es_opts'])
+    else:
+        sim.randomized_times(**sim_config['times_rd_opts'])
+    
+    # signal and noise stuff
+    #if sim_config['model_name'] in ['sinusoid_TD', 'Sinusoid_TD']:
+    #    from ptacake.GW_models import sinusoid_TD
+    #    sim.inject_signal(sinusoid_TD, sim_config['true_source'], *sim_config['true_args'])
+    #else:
+    #    raise NotImplementedError('Model {} not yet implemented'.format(sim_config['model_name']))
+    
+    #if sim_config['white_noise']:
+        
+        # try to read scale for white noise from config file, if not in config
+        # or Null, set to 1 (then it doens't do anything)
+    #    try:
+    #        scale = sim_config['noise_scale']
+    #    except:
+    #        scale = 1
+    #    if scale is None:
+    #        scale = 1
+        
+    #    sim.white_noise(seed=sim_config['noise_seed'], scale=scale)
+
+
+    
+    ### LOAD THE REAL RESIDUALS AND TOAS IN                                                         
+
+    ######################LOAD THE RESIDUALS AND TOAS#####################################          
+    #res_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/first_try_Nullstream/res_and_toas/'
+    #sim_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/first_try_Nullstream/res_and_toas/sim/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/after_5.13e9/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/year/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/low_rms_small_gaps/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/low_rms_small_gaps/simulated_same_rms_as_real/'
+    #mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/low_rms_small_gaps/simulated_red_noise_5e-8_wnall_1e-7/'
+    mpta_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/low_rms_small_gaps/libstempo/efac_red_averaged/realisation_9/'
+    
+    #file_paths_residuals = sorted(glob.glob(os.path.join(res_path, '*mean_residuals.txt')))
+    file_paths_residuals = sorted(glob.glob(os.path.join(mpta_path, '*residuals.txt')))
+    file_paths_toas = sorted(glob.glob(os.path.join(mpta_path, '*toas.txt')))
+    #file_paths_toas = sorted(glob.glob(os.path.join(res_path, '*grouped_toas.txt')))
+
+    ### Choose your subset indices
+    subset_indices = [1, 4, 6, 14, 18]
+    #(J0437-4715)
+    #(J1125-6014)
+    #(J1600-3053)
+    #(J1918-0642)
+    #(J2241-5236)
+    
+    print('res before',len(file_paths_residuals))
+    print('toas before',len(file_paths_toas))
+    
+    file_paths_residuals = [file_paths_residuals[i] for i in subset_indices]
+    file_paths_toas = [file_paths_toas[i] for i in subset_indices]
+
+    print('res after',len(file_paths_residuals))
+    print('toas after',len(file_paths_toas))
+    
+    for i, path in enumerate(file_paths_residuals):
+        filename = os.path.basename(path)
+        filename = filename.replace('_mean_residuals.txt', '')
+        print(f"{i:2d}: {filename} {os.path.basename(file_paths_toas[i])}")
+    
+    #    pulsars = [
+    #    "J0900-3144", "J1125-6014", "J1543-5149", "J1708-3506", "J1801-1417", "J1909-3744", "J2222-0137",
+    #    "J0931-1902", "J1216-6410", "J1545-4550", "J1713+0747", "J1802-2124", "J1911-1114", "J2229+2643",
+    #    "J0030+0451", "J0955-6150", "J1231-1411", "J1547-5709", "J1719-1438", "J1804-2717", "J1918-0642", "J2234+0944",
+    #    "J0101-6422", "J1012-4235", "J1327-0755", "J1600-3053", "J1721-2457", "J1804-2858", "J1933-6211", "J2236-5527",
+    #    "J0125-2327", "J1017-7156", "J1421-4409", "J1603-7202", "J1730-2304", "J1811-2405", "J1946-5403", "J2241-5236",
+    #    "J0437-4715", "J1022+1001", "J1431-5740", "J1614-2230", "J1732-5049", "J1825-0319", "J2010-1323", "J2317+1439",
+    #    "J0610-2100", "J1024-0719", "J1435-6100", "J1629-6902", "J1737-0811", "J1832-0836", "J2039-3616", "J2322+2057",
+    #    "J0613-0200", "J1036-8317", "J1446-4701", "J1643-1224", "J1744-1134", "J1843-1113", "J2124-3358", "J2322-2650",
+    #    "J0614-3329", "J1045-4509", "J1455-3330", "J1652-4838", "J1747-4036", "J1843-1448", "J2129-5721",
+    #    "J0636-3044", "J1101-6424", "J1514-4946", "J1653-2054", "J1751-2857", "J1902-5105", "J2145-0750",
+    #    "J0711-6830", "J1125-5825", "J1525-5545", "J1658-5324", "J1757-5322", "J1903-7051", "J2150-0326"
+    #]
+    
+    #indices = [9,20,31,53] # J0900-3144, J1125-6014, J1543-5149, J1801-1417, J1909-3744, J1216-6410, J1545-4550, J0955-6150, J1719-1438 
+    #rms_values = np.array([3.258e-06,1.251e-06,1.390e-06,1.216e-06]) # There are the rms values of the mean residuals.
+    #indices = [9,20,31,53,64,21,32,11,44] # J0900-3144, J1125-6014, J1543-5149, J1801-1417, J1909-3744, J1216-6410, J1545-4550, J0955-6150, J1719-1438 
+    #rms_values = np.array([3.258e-06,1.251e-06,1.390e-06,1.216e-06,2.989e-07,4.980e-07,6.452e-07,1.834e-06,2.070e-06]) # There are the rms values of the mean residuals.
+    #rms_values = np.ones(len(file_paths_residuals)) * 1.0e-07
+
+    #rms_values = np.array([
+    #5.526916e-07,
+    #2.436952e-07,
+    #7.271264e-07,
+    #8.291908e-07,
+    #1.250552e-06,
+    #4.979598e-07,
+    #6.533791e-07,
+    #9.378491e-07,
+    #6.760296e-07,
+    #1.097367e-06,
+    #1.215683e-06,
+    #1.218144e-06,
+    #5.868537e-07,
+    #2.989465e-07,
+    #7.020967e-07,
+    #5.764938e-07,
+    #8.130263e-07,
+    #8.739332e-07,
+    #1.827902e-07,
+    #8.929436e-07
+#]) # the 20 pulsars with the lowest rms and small gaps /rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig/mpta_data/averaged/low_rms_small_gaps/
+
+# values with red noise added:
+
+#    rms_values = np.array([
+#        1.1890810186664783e-07,
+#        9.875114734555442e-08,
+#        1.2655280145247995e-07,
+#        1.204588436917562e-07,
+#        1.2888109271795695e-07,
+#        1.1420209588902877e-07,
+#        1.1268331615003644e-07,
+#        1.387909585830896e-07,
+#        1.3001776404619721e-07,
+#        1.330683336285485e-07,
+#        1.2871722392144494e-07,
+#        1.397235089021499e-07,
+#        1.240147757975337e-07,
+#        1.1678337678219039e-07,
+#        1.2285150355087877e-07,
+#        1.4240145551131587e-07,
+#        1.297679662689904e-07,
+#        1.3849605323734475e-07,
+#        1.210833108455616e-07,
+#        1.4490562115900298e-07
+#    ])
+
+    
+    ###realisation7
+    
+    # rms_values = np.array([
+    #     3.493853e-07,
+    #     9.847658e-09,
+    #     1.481093e-07,
+    #     1.029526e-06,
+    #     1.966644e-07,
+    #     2.939161e-07,
+    #     9.757676e-08,
+    #     7.417802e-07,
+    #     4.063903e-07,
+    #     1.499994e-06,
+    #     7.717804e-07,
+    #     3.711426e-07,
+    #     4.898217e-07,
+    #     1.026994e-07,
+    #     5.891160e-07,
+    #     5.744056e-07,
+    #     7.779387e-07,
+    #     8.314503e-07,
+    #     1.233394e-07,
+    #     8.720108e-07,
+    # ])
+
+
+    ###realisation8
+    
+    # rms_values = np.array([
+    #     4.935819e-07,
+    #     7.786383e-09,
+    #     1.522487e-07,
+    #     8.759127e-07,
+    #     1.848364e-07,
+    #     2.798172e-07,
+    #     9.911824e-08,
+    #     7.629724e-07,
+    #     3.697377e-07,
+    #     1.312699e-06,
+    #     9.276348e-07,
+    #     4.903362e-07,
+    #     4.215690e-07,
+    #     1.183165e-07,
+    #     5.802121e-07,
+    #     6.292843e-07,
+    #     7.270983e-07,
+    #     8.093408e-07,
+    #     1.472776e-07,
+    #     1.128143e-06,
+    # ])
+
+    ###realisation9
+
+    rms_values = np.array([
+        3.347423e-07,
+        8.281377e-09,
+        1.509379e-07,
+        9.457856e-07,
+        1.824077e-07,
+        2.869467e-07,
+        1.088988e-07,
+        8.044806e-07,
+        4.283897e-07,
+        1.291626e-06,
+        9.024025e-07,
+        4.142931e-07,
+        4.414074e-07,
+        1.085587e-07,
+        6.538351e-07,
+        8.547546e-07,
+        7.417700e-07,
+        8.524628e-07,
+        1.180914e-07,
+        1.057457e-06,
+    ])
+
+    rms_values = rms_values[subset_indices]
+    
+    #pos_to_remove = 8
+
+    # Remove from indices
+    #indices.pop(pos_to_remove)
+    
+    # Remove from rms_values
+    #rms_values = np.delete(rms_values, pos_to_remove)
+    
+    #file_paths_residuals = [file_paths_residuals[i] for i in indices]
+    #file_paths_toas = [file_paths_toas[i] for i in indices]
+
+    print(f'residuals: {file_paths_residuals}')
+    print(f'toas: {file_paths_toas}')
+
+    for pulsars in file_paths_residuals:
+        print(f'Pulsars included: {os.path.basename(pulsars)}')
+        
+    resids = []
+    toas = []
+
+    # Arrays to hold values                                                                         
+    RAh = []
+    RAm = []
+    DECh = []
+    DECam = []
+
+    theta = []
+    phi = []
+
+    # Save the RA and DEC to arrays                                                                 
+    for filename in file_paths_residuals:
+        # Extract the base name of the file (without the directory and extension)                   
+        base_name = os.path.basename(filename)
+
+        # Extract the relevant part after the 'J'                                                   
+        coords = base_name.split('_')[0][1:]  # This will give something like "0030+0451"           
+
+        # Parse the values                                                                          
+        rah = int(coords[0:2])   # First two digits for RAh                                         
+        ram = int(coords[2:4])   # Next two digits for RAm                                          
+        dech = int(coords[4:7])  # Next two including the negative for DECh                         
+        decam = int(coords[7:9]) # Last two for DECam                                               
+
+        # Append to respective arrays                                                               
+        RAh.append(rah)
+        RAm.append(ram)
+        DECh.append(dech)
+        DECam.append(decam)
+
+        theta_val, phi_val = radec_location_to_ang([RAh[-1],RAm[-1],DECh[-1],DECam[-1]])
+
+        theta.append(theta_val)
+        phi.append(phi_val)
+
+    theta = np.array(theta)
+    phi = np.array(phi)
+
+    #np.random.seed(42)  # Set seed for reproducibility
+    #np.random.shuffle(theta)
+    #np.random.shuffle(phi)    
+
+    print(f'All thetas: {theta}')
+    print(f'All phis: {phi}')    
+
+    print("theta length:", len(theta))
+    print("pulsar DataFrame shape:", sim._pulsars.shape)
+    
+    sim._pulsars['theta'] = theta
+    sim._pulsars['phi'] = phi
+
+    for i in range(len(file_paths_residuals)):
+        resids.append(np.loadtxt(file_paths_residuals[i]))
+
+        # Load TOAs and append to the toas list                                                     
+        toas.append(np.loadtxt(file_paths_toas[i]))
+
+    # Shuffle each residual array in-place
+    #for each_pulsar in resids:
+    #    np.random.shuffle(each_pulsar)
+        
+    # Determine the maximum length                                                                  
+    max_length = max(len(res) for res in resids)
+
+    # Create a 2D array filled with NaNs                                                            
+    real_res = np.full((len(resids), max_length), np.nan)
+
+    # Fill the 2D array with the 1D arrays                                                          
+    for i, res in enumerate(resids):
+        real_res[i, :len(res)] = res
+
+    # Replace all non-NaN values with 0.0                                                           
+    #real_res = np.where(np.isnan(real_res), real_res, 0.0)
+
+    # Determine the maximum length                                                                  
+    #max_length = max(len(res) for res in resids)                                                   
+
+    # Create a 2D array filled with NaNs                                                            
+    real_toas = np.full((len(toas), max_length), np.nan)
+
+    # Fill the 2D array with the 1D arrays                                                          
+    for i, t in enumerate(toas):
+        real_toas[i, :len(t)] = t
+
+    #print(f'MAX LEN {max_length}')                                                                 
+    #print(f'shape of real toas {real_toas.shape}')                                                 
+
+    sim.set_residuals(real_res, real_toas) #sets the signal to the real residuals and the noise to zero.
+    
+    # inject sinusoid signal
+    if sim_config['model_name'] in ['sinusoid_TD', 'Sinusoid_TD']:
+        print(f'IN THE SINUSOID PART')
+        from ptacake.GW_models import sinusoid_TD
+        # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
+        #sinusoid_args = [0.123, 2e-15, np.pi/7, 0.5, 2e-8]
+        #sinusoid_args = [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8]
+        # choose source (theta, phi) coordinates
+        #source = (0.8*np.pi, 1.3*np.pi)
+        #source = (0.5, 0.5)
+        #sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+        sim.inject_signal(sinusoid_TD, sim_config['true_source'], *sim_config['true_args'])
+    else:
+        print(f'NOT IN THE SINUSOID PART')
+        raise NotImplementedError('Model {} not yet implemented'.format(sim_config['model_name']))
+        
+    # save time span for each pulsar                                                             
+    sim._pulsars['T'] = np.nanmax(sim._times, axis=1) - np.nanmin(sim._times, axis=1)
+
+    # save number of TOAs (not nan)                                                              
+    sim._pulsars['nTOA'] = [np.sum(np.isfinite(t)) for t in sim._times]
+
+    # set the rms values:                                                                        
+    sim._pulsars['rms'] = rms_values
+
+    # save the TD covariance matrix diag(sigma**2), and inverse per pulsar                       
+    num_times = sim._pulsars['nTOA'].values
+    #num_times = np.array([max_length, max_length, max_length, max_length], dtype=np.int64)      
+    print('rms values',sim._pulsars['rms'].values)
+    sigma2 = (sim._pulsars['rms'].values)**2
+    #sigma2 = np.array(631,631,631,631)**2                                                       
+    sim._TD_covs = [sigma2[i] * np.eye(num_times[i]) for i in range(sim._n_pulsars)]
+    sim._TD_inv_covs = [np.linalg.inv(cov) for cov in sim._TD_covs]
+
+
+   
+    # if using FD likelihood, need to run fourier_residuals
+    # if using FD_ns likelihood, need to run concatenate_residuals also
+    if 'FD' in run_config['ll_name']:
+        sim.fourier_residuals()
+    # null stream likelihoods need concatenated residuals
+    if run_config['ll_name'] in ['FD_ns', 'FD_null']:
+        sim.concatenate_residuals()
+        
+    # save the sim as a pickle in case we resume later
+    with open(sim_pickle_path, 'wb') as f:
+        pickle.dump(sim, f)
+        
+    
+### optional plotting/save S/N ###
+    
+# compute and save S/N
+snr = sim.compute_snr()
+with open (join(outdir, 'snr.txt'), 'w+') as f:
+    f.write('snr {}\n'.format(snr))
+
+# plotting and saving plots
+if sim_config['plot_pulsar_map']:
+    fig0, ax0 = sim.plot_pulsar_map(plot_point=sim_config['true_source'])
+    #fig0, ax0 = sim.plot_pulsar_map(plot_point=(source))
+    fig0.savefig(join(outdir, 'pulsar_map.pdf'))
+if sim_config['plot_residuals_TD']:
+    fig1, ax1 = sim.plot_residuals()
+    fig1.savefig(join(outdir, 'TDresiduals.pdf'))
+if sim_config['plot_residuals_FD'] and 'FD' in run_config['ll_name']:
+    fig2, ax2 = sim.plot_residuals_FD()
+    fig2.savefig(join(outdir, 'FDresiduals.pdf'))
+    
+    
+### select sampler and run! ###
+    
+#if run_config['sampler'] == 'cpnest':
+#    from ptacake.cpnest_stuff import run
+    
+#elif run_config['sampler'] == 'grid':
+#    from ptacake.grid_sampler import run
+
+#else:
+#    raise ValueError('Unknown sampler {}'.format(run_config['sampler']))
+
+from ptacake.cpnest_stuff_dyn import dynesty_run
+
+print('Moving to run... \n')
+# call sampler run with sim object, run_config and output directory
+dynesty_run(sim, run_config, outdir=outdir)
+#run(sim, run_config, outdir=outdir)
+
+
+
+
+########## COMBINE POSTERIOR AND LIKELIHOOD FILES ##########
+
+### read in posterior file ###                                                                                                              
+
+posterior_samples_file = os.path.join(outdir, 'posterior_samples.txt')
+logweights_file = os.path.join(outdir, 'logweights.txt')
+output_file = os.path.join(outdir, 'posterior.dat')
+
+# Load posterior samples (7 columns of parameters)                                                                                          
+posterior_samples = np.loadtxt(posterior_samples_file)
+
+# Load log weights (1 column of logL)                                                                                                       
+logL = np.loadtxt(logweights_file)
+
+# Create a logPrior column of zeros (since the priors are flat)                                                                             
+logPrior = np.zeros(logL.shape)
+
+# Append the logL and logPrior as the 8th and 9th columns                                                                                   
+combined_data = np.hstack((posterior_samples, logL.reshape(-1, 1), logPrior.reshape(-1, 1)))
+
+# Define the header                                                                                                                         
+header = 'phase logamp pol cosi GW_freq costheta phi logL logPrior'
+
+# Save the combined data as posteriors.dat with header                                                                                      
+np.savetxt(output_file, combined_data, fmt='%.8e', header=header)
+
+############################################################
+
+
+
+
+########## PLOT THE STREAMS FOR THE TOP 3 LOCATIONS AND 3 RANDOM LOCATIONS ##########
+
+# Load the posterior file
+data = np.loadtxt(output_file)
+
+# Columns
+# 5: costheta, 6: phi, 7: logL
+costheta = data[:, 5]
+phi = data[:, 6]
+logL = data[:, 7]
+
+# Convert to theta in radians
+theta = np.arccos(costheta)
+
+# -------- Top 3 by log-likelihood --------
+top_indices = np.argsort(logL)[-3:]
+
+# -------- Random 3 from the rest --------
+all_indices = np.arange(len(logL))
+remaining_indices = np.setdiff1d(all_indices, top_indices)
+random_indices = np.random.choice(remaining_indices, size=3, replace=False)
+
+# -------- Combine --------
+selected_indices = np.concatenate((top_indices, random_indices))
+
+selected_thetas = theta[selected_indices]
+selected_phis = phi[selected_indices]
+selected_logL = logL[selected_indices]
+
+# Create labels array
+labels = np.array(['top'] * 3 + ['random'] * 3, dtype='U6')
+
+# Stack into one array for saving (convert all to str for savetxt)
+data_to_save = np.column_stack((
+    selected_thetas,
+    selected_phis,
+    selected_logL,
+    labels
+)).astype(str)
+
+
+sky_locations_file = os.path.join(outdir, 'selected_sky_locations.txt')
+
+
+# Save as TXT with header (comma-delimited)
+np.savetxt(sky_locations_file, data_to_save, delimiter=',',
+           header='theta,phi,logL,label', comments='', fmt='%s')
+
+
+
+
+for i, (th, ph) in enumerate(zip(selected_thetas, selected_phis)):
+    sim.concatenate_residuals()
+    ns_mat = ptacake.nullstream_algebra.construct_M(th, ph, sim._pulsars[['theta', 'phi']].values)
+    big_ns_mat, inv_ns_cov = sim._ns_covariance(ns_mat)
+    null_streams = big_ns_mat @ sim.residuals_concat
+
+    ns_hp = null_streams[:sim._n_freqs]
+    ns_hc = null_streams[sim._n_freqs:2*sim._n_freqs]
+
+    # Dynamically split the null streams based on the number of pulsars                                                                               
+    null_streams_list = []
+    for i in range(num_pulsars-2):
+        start_idx = (2 + i) * sim._n_freqs
+        end_idx = (3 + i) * sim._n_freqs
+        null_streams_list.append(null_streams[start_idx:end_idx])
+
+
+    # Plot null streams in the Frequency Domain (FD)                                                                                                  
+    fig4, ax4 = plt.subplots(1)
+    # Plot magnitude for ns_hp
+    ax4.plot(sim._freqs, np.abs(ns_hp), label='$h^{+}$', linestyle='--', alpha=1.0)
+    # Plot magnitude for ns_hc                                                                                                                        
+    ax4.plot(sim._freqs, np.abs(ns_hc), label=r'$h^{\times}$', linestyle='-.', alpha=1.0)
+
+    for i, ns in enumerate(null_streams_list):
+        #ax4.plot(sim._freqs, np.abs(ns), label=f'null-stream {i+1}')
+        ax4.plot(sim._freqs, np.abs(ns))
+
+    ax4.legend()
+    ax4.set_xlabel('Frequency (Hz)')
+
+    filename = f'null_plot_{i}_theta{th:.2f}_phi{ph:.2f}.pdf'
+    filepath = os.path.join(outdir, filename)
+    fig4.savefig(filepath)
+    plt.close(fig4)
+
+
+    # --- Plot just h+ and hx ---
+    fig5, ax5 = plt.subplots(1)
+    ax5.plot(sim._freqs, np.abs(ns_hp), label='$h^{+}$', linestyle='--', alpha=1.0)
+    ax5.plot(sim._freqs, np.abs(ns_hc), label=r'$h^{\times}$', linestyle='-.', alpha=1.0)
+
+    ax5.legend()
+    ax5.set_xlabel('Frequency (Hz)')
+
+    filename_nonull = f'gwonly_plot_{i}_theta{th:.2f}_phi{ph:.2f}.pdf'
+    filepath_nonull = os.path.join(outdir, filename_nonull)
+    fig5.savefig(filepath_nonull)
+    plt.close(fig5)
+    
+        
+#    fig, ax = plt.subplots()
+#    ax.plot(sim._freqs, ns_hp, label='$h^{+}$')
+#    ax.plot(sim._freqs, ns_hc, label=r'$h^{\times}$')
+#    ax.plot(sim._freqs, ns1, label='null-stream 1')
+#    ax.plot(sim._freqs, ns2, label='null-stream 2')
+#    ax.set_title(f"$\\theta={th:.2f},\\ \phi={ph:.2f}$")
+#    ax.set_xlabel('Frequency (Hz)')
+#    ax.legend()
+#    filename = f'null_plot_{i}_theta{th:.2f}_phi{ph:.2f}.pdf'
+#    filepath = os.path.join(outdir, filename)
+#    fig.savefig(filepath)
+#    plt.close(fig)
+
+
+
+
+#####################################################################################
+
+
+
+# Record end time                                                                                
+end_time = time.time()
+
+# Calculate elapsed time in seconds                                                              
+elapsed_time = end_time - start_time
+
+# Convert to minutes and hours                                                                   
+elapsed_minutes = elapsed_time / 60
+elapsed_hours = elapsed_time / 3600
+
+# Print the elapsed time in seconds, minutes, and hours                                          
+print(f"Code ran for {elapsed_time:.2f} seconds.")
+print(f"Code ran for {elapsed_minutes:.2f} minutes.")
+print(f"Code ran for {elapsed_hours:.2f} hours.")

@@ -204,7 +204,8 @@ def pulsars_from_csv(self, filepath, sep=',', nrows=None, overwrite=False):
     self._n_pulsars = len(pulsars)
 
 
-def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
+#def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
+def plot_pulsar_map(self, plot_point=None, wrong_point=None, background_map=None, **hp_kwargs):
     """
     Plot map of the pulsars. Bigger pulsars have lower residuals rms.
     Optional plot_point = (theta, phi) plots this points as a cross on the map.
@@ -217,14 +218,35 @@ def plot_pulsar_map(self, plot_point=None, background_map=None, **hp_kwargs):
         background_map = np.full(hp.nside2npix(1), hp.UNSEEN)
 
     hp.mollview(background_map, title='{}-pulsar PTA'.format(len(self._pulsars)),
+                rot=(180, 0, 0),
                 **hp_kwargs)
 
     marker_sizes = (self._pulsars['rms'].values/1.e-7)**(-0.4)*10
-    for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
-        hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
-    if plot_point is not None    :
-        hp.projplot(*plot_point, marker='+', c='k', ms=10)
+    
+    #for p, pulsar in enumerate(self._pulsars[['theta', 'phi']].values):
+    #    hp.projplot(*pulsar, marker='*', c='w', ms=marker_sizes[p])
+    #if wrong_point is not None    :
+    #    hp.projplot(*wrong_point, marker='+', c='r', ms=23, markeredgewidth=5, alpha=0.5)
+    #if plot_point is not None    :
+    #    hp.projplot(*plot_point, marker='+', c='g', ms=23, markeredgewidth=5, alpha=0.5)
 
+    # Plot pulsars with horizontally flipped phi (RA)
+    for p, (theta, phi) in enumerate(self._pulsars[['theta', 'phi']].values):
+        phi_flipped = (2 * np.pi - phi) % (2 * np.pi)
+        hp.projplot(theta, phi_flipped, marker='*', c='w', ms=marker_sizes[p])
+
+    # Plot optional wrong point
+    if wrong_point is not None:
+        theta, phi = wrong_point
+        phi_flipped = (2 * np.pi - phi) % (2 * np.pi)
+        hp.projplot(theta, phi_flipped, marker='+', c='r', ms=23, markeredgewidth=5, alpha=0.5)
+
+    # Plot optional plot point
+    if plot_point is not None:
+        theta, phi = plot_point
+        phi_flipped = (2 * np.pi - phi) % (2 * np.pi)
+        hp.projplot(theta, phi_flipped, marker='+', c='g', ms=23, markeredgewidth=5, alpha=0.5)
+    
     return plt.gcf(), plt.gca()
 
 

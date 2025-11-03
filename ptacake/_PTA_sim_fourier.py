@@ -75,6 +75,37 @@ def _setup_TOAs_fourier(self, fmax=1e-7, alpha=1, overwrite_freqs=None):
         self._TOA_weights.append(weights)
         self._TOA_fourier_mats.append(mat)
         FD_cov = np.einsum('aj,jk,bk', mat, self._TD_covs[p], np.conj(mat))
+
+        ### ADDING DIAGONAL RED NOISE TO THE COVARIANCE MATRIX
+        A_red = 1e-13  # change as needed
+        gamma = 4.0
+        freq_ref = 1 / (365.25 * 24 * 3600)  # Hz
+
+        #red_psd = A_red**2 * (self._freqs / freq_ref)**(-gamma)
+        red_psd = (A_red**2 / (12 * np.pi**2)) * (self._freqs / freq_ref)**(-gamma) * self._freqs**(-3)
+
+
+        plt.loglog(self._freqs, red_psd, label="Red PSD")
+
+        # --- White noise PSD level (constant across f) ---
+        #sigma = 1e-7     # rms white noise in seconds (e.g., 100 ns)
+        #dt = np.median(np.diff(self._times))  # average cadence [s]
+        #white_psd = 2 * sigma**2 * dt
+        #plt.hlines(white_psd, self._freqs.min(), self._freqs.max(), 
+        #           colors="orange", linestyles="--", label="White PSD")
+        
+        #plt.xlabel("Frequency [Hz]")
+        #plt.ylabel("PSD [s^2/Hz]")
+        #plt.legend()
+        #plt.tight_layout()
+        
+        #plt.savefig("red_vs_white_psd.png", dpi=200)
+        #plt.close()
+
+
+        
+        ###FD_cov += np.diag(red_psd)
+        ###
         
         # Enfore FD_cov to be real
         # previously, it was also forced to be diagonal, however, THIS WAS WRONG

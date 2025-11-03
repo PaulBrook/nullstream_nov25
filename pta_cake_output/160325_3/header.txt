@@ -1,1 +1,0 @@
-phase	logamp	pol	cosi	GW_freq	costheta	phi	logL

@@ -26,6 +26,7 @@ if 'ptacake' in sys.modules:
 sys.path.insert(0, '/rds/projects/v/vecchioa-gw-pta/brookp/clean/NullStreams_orig')
 
 import ptacake
+from dynesty import NestedSampler
 
 print(ptacake.__file__)
 
@@ -44,6 +45,7 @@ parser.add_argument('-r', '--run_config', required=True, dest='run_config',
                     help='config file for CPNest run')
 parser.add_argument('-o', '--output_dir', required=True,
                     help='Output directory')
+
 
 args = parser.parse_args()
 
@@ -104,7 +106,6 @@ except Exception:
     method = sim_config['pulsar_method']
     
     if method == 'random':
-        print('YES RANDOM')
         pulsar_opts = sim_config['pulsar_opts']
         num_pulsars = pulsar_opts.pop('num_pulsars')
         sim.random_pulsars(num_pulsars, **sim_config['pulsar_opts'])
@@ -154,18 +155,39 @@ except Exception:
 
     ######################LOAD THE RESIDUALS AND TOAS#####################################          
     res_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/first_try_Nullstream/res_and_toas/'
+    sim_path = '/rds/projects/v/vecchioa-gw-pta/brookp/clean/first_try_Nullstream/res_and_toas/sim/'
 
-    file_paths_residuals = sorted(glob.glob(os.path.join(res_path, '*mean_residuals.txt')))
-    file_paths_toas = sorted(glob.glob(os.path.join(res_path, '*grouped_toas.txt')))
+    #file_paths_residuals = sorted(glob.glob(os.path.join(res_path, '*mean_residuals.txt')))
+    file_paths_residuals = sorted(glob.glob(os.path.join(sim_path, '*sim_residuals_reg.txt')))
+    file_paths_toas = sorted(glob.glob(os.path.join(sim_path, '*sim_toas_reg.txt')))
+    #file_paths_toas = sorted(glob.glob(os.path.join(res_path, '*grouped_toas.txt')))
 
-    indices = [1,9,15,22,26,27,29] # first 7                                                        
-    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 0.200e-6, 2.335e-6, 0.201e-6]) #first 7
-    rms_values = np.array([0.856e-7, 0.749e-7, 0.925e-7, 0.735e-7, 0.200e-7, 2.335e-7, 0.201e-7]) #first 7
-    #rms_values = np.array([0.856e-8, 0.749e-8, 0.925e-8, 0.735e-8, 0.200e-8, 2.335e-8, 0.201e-8]) #first 7
-    #rms_values = np.array([0.856e-9, 0.749e-9, 0.925e-9, 0.735e-9, 0.200e-9, 2.335e-9, 0.201e-9]) #first 7
+    print(len(file_paths_residuals))
+    print(len(file_paths_toas))
 
-    file_paths_residuals = [file_paths_residuals[i] for i in indices]
-    file_paths_toas = [file_paths_toas[i] for i in indices]
+    #11 PSRS: J0030+0451, J0613-0200, J1012+5307, J1455-3330, J1640+2224, J1643-1224, J1713+0747, B1855, B1937+21, J2145-0750, J2317+1439
+    #9 PSRS: J0030+0451, J0613-0200, J1012+5307, J1455-3330, J1640+2224, J1643-1224, J1713+0747, J2145-0750, J2317+1439
+    #indices = [1,9,15,22,26,27,29,  43,  50,  59,65] # all
+    #rms_values = np.array([0.251e-6, 0.168e-6, 0.298e-6, 0.735e-6, 0.200e-6, 0.898e-6, 0.095e-6, 0.330e-6, 0.104e-6, 0.644e-6, 0.345e-6]) # white noise values from https://iopscience.iop.org/article/10.3847/2041-8213/acda9a/pdf        
+    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 0.200e-6, 2.335e-6, 0.201e-6, 0.829e-6, 5.774e-6, 0.799e-6, 0.345e-6]) # full noise values from https://iopscience.iop.org/article/10.3847/2041-8213/acda9a/pdf
+
+    #indices = [1,9,15,22,26,27,29] # first 7
+    indices = [1,9,15,22,26,27,29,59,65] # all except 1855 and 1937
+    #indices = [1,9,15,22,27,29,59,65] # all except 1855 and 1937 and 1640
+    #indices = [1,9,15,22,26,27,59,65] # all except 1855 and 1937 and 1713
+    #indices = [1,9,15,22,27,59,65] # all except 1855 and 1937 and 1713 and 1640 
+    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 0.200e-6, 2.335e-6, 0.201e-6]) # first 7
+    rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 0.200e-6, 2.335e-6, 0.201e-6, 0.799e-6, 0.345e-6]) # all except 1855 and 1937
+    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 2.335e-6, 0.201e-6, 0.799e-6, 0.345e-6]) # all except 1855 and 1937 and 1640
+    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 0.200e-6, 2.335e-6, 0.799e-6, 0.345e-6]) # all except 1855 and 1937 and 1713
+    #rms_values = np.array([0.856e-6, 0.749e-6, 0.925e-6, 0.735e-6, 2.335e-6, 0.799e-6, 0.345e-6]) # all except 1855 and 1937 and 1713 and 1640
+    #rms_values = np.array([0.856e-7, 0.749e-7, 0.925e-7, 0.735e-7, 0.200e-7, 2.335e-7, 0.201e-7, 0.799e-7, 0.345e-7]) # made 10 times smaller. Works for flat residuals.
+
+    #file_paths_residuals = [file_paths_residuals[i] for i in indices]
+    #file_paths_toas = [file_paths_toas[i] for i in indices]
+
+    print(f'residuals: {file_paths_residuals}')
+    print(f'toas: {file_paths_toas}')
 
     for pulsars in file_paths_residuals:
         print(f'Pulsars included: {os.path.basename(pulsars)}')
@@ -182,7 +204,6 @@ except Exception:
     theta = []
     phi = []
 
-    
     # Save the RA and DEC to arrays                                                                 
     for filename in file_paths_residuals:
         # Extract the base name of the file (without the directory and extension)                   
@@ -211,12 +232,15 @@ except Exception:
     theta = np.array(theta)
     phi = np.array(phi)
 
-    print(f'All thetas: {theta}')
-    print(f'All phis: {phi}')
+    #np.random.seed(42)  # Set seed for reproducibility
+    #np.random.shuffle(theta)
+    #np.random.shuffle(phi)    
 
+    print(f'All thetas: {theta}')
+    print(f'All phis: {phi}')    
+    
     sim._pulsars['theta'] = theta
     sim._pulsars['phi'] = phi
-
 
     for i in range(len(file_paths_residuals)):
         resids.append(np.loadtxt(file_paths_residuals[i]))
@@ -224,9 +248,10 @@ except Exception:
         # Load TOAs and append to the toas list                                                     
         toas.append(np.loadtxt(file_paths_toas[i]))
 
-    print(f'RESIDS1: {resids}')
-    print(f'TOAS1: {toas}')
-
+    # Shuffle each residual array in-place
+    #for each_pulsar in resids:
+    #    np.random.shuffle(each_pulsar)
+        
     # Determine the maximum length                                                                  
     max_length = max(len(res) for res in resids)
 
@@ -238,7 +263,7 @@ except Exception:
         real_res[i, :len(res)] = res
 
     # Replace all non-NaN values with 0.0                                                           
-    real_res = np.where(np.isnan(real_res), real_res, 0.0)
+    #real_res = np.where(np.isnan(real_res), real_res, 0.0)
 
     # Determine the maximum length                                                                  
     #max_length = max(len(res) for res in resids)                                                   
@@ -253,9 +278,6 @@ except Exception:
     #print(f'MAX LEN {max_length}')                                                                 
     #print(f'shape of real toas {real_toas.shape}')                                                 
 
-    print(f'RESIDS2: {real_res}')
-    print(f'TOAS2: {real_toas}')
-
     sim.set_residuals(real_res, real_toas) #sets the signal to the real residuals and the noise to zero.
 
 
@@ -264,17 +286,21 @@ except Exception:
 
 
     # inject sinusoid signal
-    from ptacake.GW_models import sinusoid_TD
-    # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
-
-    #sinusoid_args = [0.123, 2e-15, np.pi/7, 0.5, 2e-8]
-    #sinusoid_args = [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8]
-    # choose source (theta, phi) coordinates
-    #source = (0.8*np.pi, 1.3*np.pi)
-    #source = (0.5, 0.5)
-    #sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
-    sim.inject_signal(sinusoid_TD, sim_config['true_source'], *sim_config['true_args'])
-    
+    if sim_config['model_name'] in ['sinusoid_TD', 'Sinusoid_TD']:
+        print(f'IN THE SINUSOID PART')
+        from ptacake.GW_models import sinusoid_TD
+        # parameters past times are: phase, amplitude, polarization, cos(i), GW angular freq
+        #sinusoid_args = [0.123, 2e-15, np.pi/7, 0.5, 2e-8]
+        #sinusoid_args = [0.5, 1.0e-14, 0.5, 0.5, 2.0e-8]
+        # choose source (theta, phi) coordinates
+        #source = (0.8*np.pi, 1.3*np.pi)
+        #source = (0.5, 0.5)
+        #sim.inject_signal(sinusoid_TD, source, *sinusoid_args)
+        #sim.inject_signal(sinusoid_TD, sim_config['true_source'], *sim_config['true_args'])
+    else:
+        print(f'NOT IN THE SINUSOID PART')
+        raise NotImplementedError('Model {} not yet implemented'.format(sim_config['model_name']))
+        
     # save time span for each pulsar                                                             
     sim._pulsars['T'] = np.nanmax(sim._times, axis=1) - np.nanmin(sim._times, axis=1)
 
@@ -283,7 +309,6 @@ except Exception:
 
     # set the rms values:                                                                        
     sim._pulsars['rms'] = rms_values
-
 
     # save the TD covariance matrix diag(sigma**2), and inverse per pulsar                       
     num_times = sim._pulsars['nTOA'].values
@@ -295,10 +320,7 @@ except Exception:
     sim._TD_inv_covs = [np.linalg.inv(cov) for cov in sim._TD_covs]
 
 
-
-
-
-    
+   
     # if using FD likelihood, need to run fourier_residuals
     # if using FD_ns likelihood, need to run concatenate_residuals also
     if 'FD' in run_config['ll_name']:
@@ -334,18 +356,21 @@ if sim_config['plot_residuals_FD'] and 'FD' in run_config['ll_name']:
     
 ### select sampler and run! ###
     
-if run_config['sampler'] == 'cpnest':
-    from ptacake.cpnest_stuff import run
+#if run_config['sampler'] == 'cpnest':
+#    from ptacake.cpnest_stuff import run
     
-elif run_config['sampler'] == 'grid':
-    from ptacake.grid_sampler import run
+#elif run_config['sampler'] == 'grid':
+#    from ptacake.grid_sampler import run
 
-else:
-    raise ValueError('Unknown sampler {}'.format(run_config['sampler']))
+#else:
+#    raise ValueError('Unknown sampler {}'.format(run_config['sampler']))
+
+from ptacake.cpnest_stuff_dyn import dynesty_run
 
 print('Moving to run... \n')
 # call sampler run with sim object, run_config and output directory
-run(sim, run_config, outdir=outdir)
+dynesty_run(sim, run_config, outdir=outdir)
+#run(sim, run_config, outdir=outdir)
 
 # Record end time                                                                                
 end_time = time.time()
