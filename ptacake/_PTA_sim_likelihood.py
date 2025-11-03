@@ -331,7 +331,7 @@ def log_likelihood_FD_dyn(self, params, add_norm=False, return_only_norm=False, 
                 raise ValueError("Covariance not positive definite for pulsar {}".format(p))
             # Include scaling by rms_factor
             logdet += self._n_freqs * np.log(rms_factor**2)
-            norm += -self._n_freqs * l2p + logdet
+            norm += -self._n_freqs * l2p - logdet
 
             
             #### use log(det(cov)) = -log(det(inv_cov))
@@ -348,6 +348,12 @@ def log_likelihood_FD_dyn(self, params, add_norm=False, return_only_norm=False, 
     if add_norm:
         ll += norm
         #print(f"ll with norm added: {ll}")
+        print(f"Quadratic term: {ll - norm}")
+        print(f"Normalization term: {norm}")
+        print(f"Total with norm: {ll}")
+    else:
+        print(f"WARNING: add_norm=False, not adding norm term {norm}")
+        print(f"Quadratic term only: {ll}")
 
     print(f"Final log-likelihood: {ll}")
     return ll
