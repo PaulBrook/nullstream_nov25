@@ -1,14 +1,56 @@
-__pycache__/*
+# --- Compiled Python files ---
+__pycache__/
 *.pyc
-tests/__pycache__/*
+tests/__pycache__/
 tests/*.pyc
-build/*
-dist/*
+
+# --- Build artifacts ---
+build/
+dist/
 *.egg-info
+*.tar.gz
+
+# --- Images and documents ---
 *.png
 *.pdf
-*.DS_Store
-some_runs_output/*
-venv/*
-*.tar.gz
-venv_orig/*
+
+# --- Job outputs and logs ---
+slurm_output/
+*.log
+*.out
+*.err
+some_runs_output/
+
+# --- Virtual environments ---
+venv*/
+.env/
+venv_orig/
+
+# --- Data and generated results ---
+pta_cake_output/
+sky_maps_output/
+mpta_data/
+
+# --- Notebooks ---
+notebooks/
+.ipynb_checkpoints/
+
+# --- System and temp files ---
+.DS_Store
+*.tmp
+*.bak
+
+# --- Editor backup files ---
+*~
+.#*
+#*#
+
+# --- Editor backup / temp files ---
+*~
+.#*
+#*#
+
+# --- Editor temp files ---
+*~
+.#*
+#*#
