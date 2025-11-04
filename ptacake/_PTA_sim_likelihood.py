@@ -229,7 +229,10 @@ def red_psd_from_A_gamma(A, gamma, freqs, f_ref):
     psd : array
         Power spectral density values at each frequency (s^2/Hz).
     """
-    return (A**2 / (12.0 * np.pi**2)) * (freqs / f_ref)**(-gamma) * (freqs**(-3))
+    #return (A**2 / (12.0 * np.pi**2)) * (freqs / f_ref)**(-gamma) * (freqs**(-3))
+    year = 1.0 / f_ref  # Convert f_ref to years (in seconds)
+    return (A**2 / (12.0 * np.pi**2)) * (freqs / f_ref)**(-gamma) * (year**3)
+    #return (A**2 / (12.0 * np.pi**2)) * (freqs / f_ref)**(-gamma)
 
 
 def log_likelihood_FD_dyn(self, params, add_norm=False, return_only_norm=False, **model_kwargs):
